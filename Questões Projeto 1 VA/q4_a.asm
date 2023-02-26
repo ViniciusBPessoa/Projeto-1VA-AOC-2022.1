@@ -1,7 +1,9 @@
 .data
   
-  mensagem1: .asciiz "mansagem test" # Carrega a messagem a ser copiada
-  espaco: .space 200 # Carrega o espaço na memora para o qual a copia irá
+  mensagem1: .asciiz "mens" # Carrega a messagem a ser copiada
+  mensagem2: .asciiz "mens" # Carrega a messagem a ser copiada
+  espaco: .space 4 # Carrega o espaço na memora para o qual a copia irá
+  espaco_2: .space 200 # Carrega o espaço na memora para o qual a copia irá
   
 .text
   
@@ -10,6 +12,8 @@ main:
   la $a0, espaco # separa o espaço na memoria em a0
   la $a1, mensagem1 #carrega em a1 a mensagema ser copiada
   
+  jal strcpy # pula para a função
+  la $a0, espaco_2 # separa o espaço na memoria em a0
   jal strcpy # pula para a função
   
   addi $a0, $v0, 0 # adiciona o retorno a0 o retorno para testar a resposta
@@ -32,8 +36,8 @@ strcpy:
   
     bne $t0, $t1, loop # cetificace de que a string ainda não acabou
   
-  lb $t1, 0($t3) # adiciona o /0 ao fim da string
-  sb $t1, 0($t2)  # adiciona o /0 ao fim da string
+  addi $t1, $0, 0 #carrega o valor a ser incerido na copia "/0"
+  sb $t1, 0($t2) # valor a ser incerido na copia "/0"
   addi $v0, $a0, 0  # retorna a função em v0
   jr $ra  # rotorna ao fluxo normal
 
