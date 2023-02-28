@@ -1,20 +1,27 @@
 .data
-   
-  msg_falha_1: .asciiz "Falha: AP invalido"
-  apt_array: # separa o espaço de um arrei na memoria
+
+  msg_falha_1: .asciiz "Falha: AP invalido"  
+  apt_array: # separa o espaço de um arrei na memoria  
   	.align 0  # diz que esse arrei deve 
   	.space 7320  #  183 por entidade
+  	
+  apt_space: .space 7320  #  espaços para verificação
 
 
-  nome: .asciiz "Vinicius B"
-  ap: .byte 1
+  nome: .asciiz "Vinicius B"  
+  ap: .word 1  
 
 .text
 
 main:
   
+  addi $t2, $0, 0  
+  
+  la $s0, apt_space
   la $a0, ap
   la $a1, nome
+  
+  sb $t1, apt_array($a0)
   
   jal incerirPessoa
   
@@ -25,14 +32,14 @@ incerirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o
   addi $t0 , $0, 0  #valor da primeira linha a buscar, alem de ser o ponteiro no arquiivo principal
   addi $t1, $0, 7320 #maior valor possivel  indicando que aquele ap não foi encontrado
   la $t4, msg_falha_1  #carregha a primeira msg de falha
-  
+
   verificador:
     lb $t3, apt_array($t0)  #carrega a primeira posição do arrey e nas proximas interaçoes apenas os numeros de apartamentos
     beq $a0, $t3, sair_verificador_andar  # verifica se aquele apartamento foi encontrado
     addi $t0, $t0, 183 # pula para o numero do proximo apartamento
     beq $t3, $t1, ap_n_encontrado  # verifica se a contagem ja cobriu todos os apartamentos
     j verificador  # retorna ao inicio do loop
-  
+
   ap_n_encontrado:  # devou a resposta se o qp estiver cheio
     addi $a0, $t4, 0  # adiciona a resposta a impressoira
     addi $t9, $ra, 0  # salva a posição do arquivo para voutarmos as posição inicial

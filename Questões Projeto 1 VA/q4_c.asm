@@ -1,6 +1,6 @@
 .data
 
-  mensagem1: .asciiz "a vida é foda irma" # Carrega a 1º messagem a ser comparada
+  mensagem1: .asciiz "a vida é foda irmao" # Carrega a 1º messagem a ser comparada
   mensagem2: .asciiz "a vida é foda irmao" # Carrega a 2º messagem a ser comparada
   
 .text
