@@ -1,8 +1,7 @@
 .data
   
   mensagem1: .asciiz "mens" # Carrega a messagem a ser copiada
-  mensagem2: .asciiz "mens" # Carrega a messagem a ser copiada
-  espaco: .space 4 # Carrega o espaço na memora para o qual a copia irá
+  espaco: .space 5 # Carrega o espaço na memora para o qual a copia irá
   espaco_2: .space 200 # Carrega o espaço na memora para o qual a copia irá
   
 .text
@@ -21,7 +20,7 @@ main:
   
   j fim # pula para o fim do programa
   
-strcpy:
+strcpy: #espaço na memoria em a0, a1 a mensagema ser copiada
 
   addi $t2, $a0, 0  # adiciona os endereços a t2
   addi $t3, $a1, 0  # adiciona os endereços as t3
