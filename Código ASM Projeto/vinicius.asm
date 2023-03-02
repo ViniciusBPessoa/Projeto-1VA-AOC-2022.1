@@ -1,7 +1,7 @@
 .data
   
-  nome: .asciiz "Vinicius BezerraPessoaDasil"  
-  ap: .asciiz "40"
+  nome: .asciiz "Vinil"  
+  ap: .asciiz "02"
 
   apt_space: .space 7480  #  espaï¿½os para verificaï¿½ï¿½o
   localArquivo: .asciiz "C:/aps.txt"
@@ -16,6 +16,9 @@ main:
   la $a1, nome
 
   jal incerirPessoa
+  
+   la $a0, ap
+  jal remover_pessoa
   
   j fim
 
@@ -40,10 +43,6 @@ incerirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o
     addi $t7, $t7, 187 # pula para o numero do proximo apartamento
     beq $t2, $t7, ap_n_encontrado  # verifica se a contagem ja cobriu todos os apartamentos
     j verificador_andar  # retorna ao inicio do loop
-
-  ap_n_encontrado:  # devolve 1 em v0 pq o ap não foi encontrado
-    addi $v0, $0, 1 # carrega 1 em v0
-    jr $ra # encerra a função
     
   ap_insere:  # se chegarmos aqui é porque o apartamento foi encontrado, agora vamos verificar se o ap pode receber mais uma pessoa
     
@@ -72,7 +71,22 @@ incerirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o
     apt_cheio: # caso o apartamento esteja cheio retor na o erro 2
       addi $v0, $0, 2 # carrega 2 no retorno 
       jr $ra # acaba a função
+      
+      
+remover_pessoa:  # deve receber em a0 o apartamento em em a1 o nome
 
+  move $t1, $a1 # salva o nome da pessoa para utilização futura
+  move $a1, $s2 # recebe a posição inicial do meu space
+  move $t9, $ra # salva o ultimo salto do arquivo
+  jal verifica_andar
+  
+  beq $v0, -1, ap_n_encontrado
+  j remover_pessoa_ac
+  
+  remover_pessoa_ac:
+    addi $t2, $v0, 3
+    
+    j fim
   
 leArquivo:
 
@@ -162,29 +176,34 @@ strcmp:  # inicia a função comparador
          
 verifica_andar: # Em a0 deve ser disposto o andara ser verificado e em a1 o ponteiro para o inicio do space de andares
   
-  move $t0, $a0 # move para t0 o anvdar a ser comparado
-  move $t1, $a1  # salva a posição inicial de a1
+  move $t6, $a1  # salva a posição inicial de a1
   addi $t7, $0, 0  # salva em t1 0
   addi $t7, $a1, 7480  # t7 marca o fim doa aps
+  move $t5, $a0  # armazena o ponteiro do apartamento incerido 
   
   verificador_andara: 
-    addi $a1, $t1, 0  # carrega a  posiçaoo do espaço disponivel em vigor para ser comparada
-    addi $t9, $ra, 0  # salva onde estava no codigo
+    move $a0, $t5 # passa o ponteiro do apartamento incerido 
+    addi $a1, $t6, 0  # carrega a  posiçaoo do espaço disponivel em vigor para ser comparada
+    addi $t8, $ra, 0  # salva onde estava no codigo
     jal strcmp  # verifica se as strings são iguais (caso sejam: o apartamento foi achado)
-    addi $ra, $t9, 0 # recupera onde estava no codigo
+    addi $ra, $t8, 0 # recupera onde estava no codigo
     beq $v0, 0, ap_enc  # confere se as strings são iguais  se sim envia para a inserção
 
-    addi $t1, $t1, 187 # pula para o numero do proximo apartamento
-    beq $t1, $t7, apt_n_achado  # verifica se a contagem ja cobriu todos os apartamentos
+    addi $t6, $t6, 187 # pula para o numero do proximo apartamento
+    beq $t6, $t7, apt_n_achado  # verifica se a contagem ja cobriu todos os apartamentos
     j verificador_andara  # retorna ao inicio do loop
   
   ap_enc:  # retorna a posição que dio andar
-    move $v0, $t1  #  move para v0 o retorno
+    move $v0, $t6  #  move para v0 o retorno
     jr $ra  # retorna para a execução do arquivo
     
   apt_n_achado: # caso o ap n seja achado retorna -1
     addi $v0, $0, -1   # move para v0 o retorno
     jr $ra # retorna para a execução do arquivo
+    
+ap_n_encontrado:  # devolve 1 em v0 pq o ap não foi encontrado
+    addi $v0, $0, 1 # carrega 1 em v0
+    jr $ra # encerra a função
   
 fim: # finaliza o codigo
   addi $v0, $0, 10
