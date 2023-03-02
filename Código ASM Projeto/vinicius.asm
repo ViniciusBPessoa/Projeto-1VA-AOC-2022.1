@@ -162,29 +162,29 @@ strcmp:  # inicia a função comparador
          
 verifica_andar: # Em a0 deve ser disposto o andara ser verificado e em a1 o ponteiro para o inicio do space de andares
   
-  move $t0, $a0 
-  move $t1, $a1
-  addi $t7, $0, 0
-  addi $t7, $a1, 7480
+  move $t0, $a0 # move para t0 o anvdar a ser comparado
+  move $t1, $a1  # salva a posição inicial de a1
+  addi $t7, $0, 0  # salva em t1 0
+  addi $t7, $a1, 7480  # t7 marca o fim doa aps
   
   verificador_andara: 
-    addi $a1, $t1, 0  # carrega a  posi??o do espa?o disponivel em vigor para ser comparada
+    addi $a1, $t1, 0  # carrega a  posiçaoo do espaço disponivel em vigor para ser comparada
     addi $t9, $ra, 0  # salva onde estava no codigo
-    jal strcmp  # verifica se as strings s?o iguais (caso sejam: o apartamento foi achado)
+    jal strcmp  # verifica se as strings são iguais (caso sejam: o apartamento foi achado)
     addi $ra, $t9, 0 # recupera onde estava no codigo
-    beq $v0, 0, ap_enc  # confere se as strings s?o iguais  se sim envia para a inser??o
+    beq $v0, 0, ap_enc  # confere se as strings são iguais  se sim envia para a inserção
 
     addi $t1, $t1, 187 # pula para o numero do proximo apartamento
     beq $t1, $t7, apt_n_achado  # verifica se a contagem ja cobriu todos os apartamentos
     j verificador_andara  # retorna ao inicio do loop
   
-  ap_enc:
-    move $v0, $t1
-    jr $ra
+  ap_enc:  # retorna a posição que dio andar
+    move $v0, $t1  #  move para v0 o retorno
+    jr $ra  # retorna para a execução do arquivo
     
-  apt_n_achado:
-    addi $v0, $0, -1
-    jr $ra
+  apt_n_achado: # caso o ap n seja achado retorna -1
+    addi $v0, $0, -1   # move para v0 o retorno
+    jr $ra # retorna para a execução do arquivo
   
 fim: # finaliza o codigo
   addi $v0, $0, 10
