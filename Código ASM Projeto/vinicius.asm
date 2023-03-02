@@ -129,7 +129,7 @@ strcpy: #espaço na memoria em a0, a1 a mensagema ser copiada
   addi $v0, $a0, 0  # retorna a função em v0
   jr $ra  # rotorna ao fluxo normal
 
-strcmp:  # inicia a funï¿½ï¿½o comparador
+strcmp:  # inicia a função comparador
     
     loop_principal: # inicia o loop principal da função
       
@@ -158,27 +158,34 @@ strcmp:  # inicia a funï¿½ï¿½o comparador
       final_igual:  # para o caso de as 2 strings serem iguais 
          
          addi $v0, $0, 0  # o retorno em v0 deve ser 0
-         jr $ra  #  retorna a execução normal do programa
+         jr $ra  #  retorna a execução normal do programa 
          
-verifica_andar: # Em a0 deve ser disposto o andar
-  addi $t7 , $s2, 0  # carrega a primeira posição do espaço disponivel para o sistema de apartamneto
-  addi $t2, $t7, 7480 # maior valor possivel  a ser escrito no sistema
-  addi $t4, $a1, 0  #  salva o que esta em a1, para utilizar em algumas outras funçoes
+verifica_andar: # Em a0 deve ser disposto o andara ser verificado e em a1 o ponteiro para o inicio do space de andares
+  
+  move $t0, $a0 
+  move $t1, $a1
+  addi $t7, $0, 0
+  addi $t7, $a1, 7480
   
   verificador_andara: 
-    addi $a1, $t7, 0  # carrega a  posição do espaço disponivel em vigor para ser comparada
+    addi $a1, $t1, 0  # carrega a  posi??o do espa?o disponivel em vigor para ser comparada
     addi $t9, $ra, 0  # salva onde estava no codigo
-    addi $t8, $a0, 0  # salva a posição inicial do meu ap a ser comparado
-    jal strcmp  # verifica se as strings são iguais (caso sejam: o apartamento foi achado)
-    addi $ra, $t9, 0 # recupera onde estava no codigo 
-    addi $a0, $t8, 0 # recupera a posição inicial do meu ap a ser comparado
-    beq $v0, 0, ap_insere  # confere se as strings são iguais  se sim envia para a inserção
+    jal strcmp  # verifica se as strings s?o iguais (caso sejam: o apartamento foi achado)
+    addi $ra, $t9, 0 # recupera onde estava no codigo
+    beq $v0, 0, ap_enc  # confere se as strings s?o iguais  se sim envia para a inser??o
 
-    addi $t7, $t7, 187 # pula para o numero do proximo apartamento
-    beq $t2, $t7, ap_n_encontrado  # verifica se a contagem ja cobriu todos os apartamentos
-    j verificador_andar  # retorna ao inicio do loop
+    addi $t1, $t1, 187 # pula para o numero do proximo apartamento
+    beq $t1, $t7, apt_n_achado  # verifica se a contagem ja cobriu todos os apartamentos
+    j verificador_andara  # retorna ao inicio do loop
   
-
+  ap_enc:
+    move $v0, $t1
+    jr $ra
+    
+  apt_n_achado:
+    addi $v0, $0, -1
+    jr $ra
+  
 fim: # finaliza o codigo
   addi $v0, $0, 10
   syscall
