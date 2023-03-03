@@ -194,13 +194,14 @@ cmd_ad_a:
 	
 	j fim_leitura					# Pula para função que quebra linha e pula para a main
 	
-# Função de remover automóvel (falta confirmar com o professor se vai funcionar assim mesmo)	
+# Função de remover automóvel	
 cmd_rm_a:
 	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	addi $a0, $a0, 8				# Soma 8 ao endereço afim de ir para onde começa o numero do AP 
 	addi $a1, $a0, 3				# Somando 3 é onde começa o modelo do automóvel
+	addi $a2, $a1, 2				# Somando mais 2 é onde começa o tipo do automóvel
 	
-	# Espaço para colocar a função ou um jump para a função, whatever
+	# Espaço para colocar a função ou um jump para a função, whatever. Lembrar que ainda é preciso chegar na cor do auto
 	
 	j fim_leitura					# Pula para função que quebra linha e pula para a main
 	
