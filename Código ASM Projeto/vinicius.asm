@@ -22,10 +22,10 @@ main:
   
   j fim
 
-
+#########################################################################################################################
 
 incerirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o nome a ser incerrido: em $s2 esta a lista de itens em $s2 estara a posição inicial dos APs
-# os possiveis erros estão em $v0 sendo eles 1 ou 2, 1 = apartamento não encontrado
+# os possiveis erros estão em $v0 sendo eles 1 ou 2, 1w = apartamento não encontrado
   
   addi $t7 , $s2, 0  # carrega a primeira posição do espaço disponivel para o sistema de apartamneto
   addi $t2, $t7, 7480 # maior valor possivel  a ser escrito no sistema
@@ -72,22 +72,75 @@ incerirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o
       addi $v0, $0, 2 # carrega 2 no retorno 
       jr $ra # acaba a função
       
-      
-remover_pessoa:  # deve receber em a0 o apartamento em em a1 o nome
-
+    
+#########################################################################################################################
+          
+remover_pessoa:  # deve receber em a0 o apartamento e em a1 o nome
+  
   move $t1, $a1 # salva o nome da pessoa para utilização futura
   move $a1, $s2 # recebe a posição inicial do meu space
-  move $t9, $ra # salva o ultimo salto do arquivo
+  
+  # salva as variaveis utilizadas para evitar problemas 
+  addi $sp, $sp, -8  # salva o espaço em memoria par asalvar os registradores
+  sw $t1, 4($sp)  # salvando o nome da pessoa
+  sw $ra, 0($sp)  # salvando o registrador de onde estavamos no codigo
+    
   jal verifica_andar
   
-  beq $v0, -1, ap_n_encontrado
-  j remover_pessoa_ac
   
-  remover_pessoa_ac:
-    addi $t2, $v0, 3
+  # carregha todas os registradores usadas
+  lw $ra, 0($sp)  # resgatando o registrador de onde estavamos no codigo
+  lw $t1, 4($sp)  # resgatando o nome da pessoa
+  addi $sp, $sp, 8  # resgatando o espaço em memoria par asalvar os registradores
+  
+  beq $v0, -1, ap_n_encontrado  # verifica se o aptamento foi encontrado 
+  addi $t2, $v0, 3  # adicionando 3 no ponteiro ele ira ate a posição do primeiro nome dos moradores
+  addi $t3, $0, 1 # inicia um contador par asaber quantas pessoas foramverificadas
+  j  remover_pessoa_ac  # se chegar aqui o anadar foi encontrado
+  
+  remover_pessoa_ac: #  inicializa a possivel remoção do morador
+    move $a0, $t2  # adiciona ao argumento a0 a posição que ele deve utilizar na busca peno nome usado no comando
+    move $a1,  $t1  # adiciona ao argumento a1 a posição que ele deve utilizar na busca
     
-    j fim
+    # salva as variaveis utilizadas para evitar problemas 
+    addi $sp, $sp, -16  # libera espaço na memoria para salvar os registradores antes da função
+    sw $t1, 12($sp)  # armazena o registrador com a posição do nome na função ne memoria
+    sw $t2, 8($sp)  # armazena o registrador com a posição do nome nos apartamentos
+    sw $t3, 4($sp)  # armazena o registrador com a contagem de pessoas
+    sw $ra, 0($sp)  # salvando o registrador de onde estavamos no codigo
+    
+    jal strcmp  # carregar a string a ser removida em a0 e em a1 o ponteiro no momento 
+    
+    #  recarrega as variaveis pos função
+    lw $ra, 0($sp) # recebendo o registrador de onde estavamos no codigo
+    lw $t3, 4($sp)  # recebendo o registrador com a contagem de pessoas
+    lw $t2, 8($sp)  # recebendo o registrador com a posição do nome nos apartamentos
+    lw $t1, 12($sp)  # recebendo o registrador com a posição do nome na função ne memoria
+    addi $sp, $sp, 16  # recebendo o espaço na memoria para salvar os registradores antes da função
+    
+    addi $t3, $t3, 1  # adiciona um ao contador de pessoas verificadas
+    beq $v0, 0, pessoa_encontrada  # verifica se o nome a ser removido é esse
+    addi $t2, $t2, 20 # pula para o proximo nome
+    beq $t3, 5, pessoa_n_enc  #  caso a pessoa não seja encontrada
+    j remover_pessoa_ac  # retorna ao loop
+
+  pessoa_n_enc:
+    addi $v0, $0, 1 # carrega 1 em v0
+    jr $ra # encerra a função
+
+  pessoa_encontrada:
+    addi $t1,$0, 0  # 
+    lb $t3, 0($t2)
+    beq $t3, 0, apagado
+    sb $t1, 0($t2)
+    addi $t2, $t2, 1
+    j pessoa_encontrada
   
+  apagado:
+    jr $ra # encerra a função
+  
+######################################################################################################################### 
+
 leArquivo:
 
   #Abre arquivo para ler
@@ -114,6 +167,8 @@ leArquivo:
 	syscall 			#executa função
 
 	jr $ra	
+
+#########################################################################################################################
 
 strcpy: #espaço na memoria em a0, a1 a mensagema ser copiada
 
@@ -142,6 +197,8 @@ strcpy: #espaço na memoria em a0, a1 a mensagema ser copiada
   sb $t1, 0($t2) # valor a ser incerido na copia "/0"
   addi $v0, $a0, 0  # retorna a função em v0
   jr $ra  # rotorna ao fluxo normal
+
+#########################################################################################################################
 
 strcmp:  # inicia a função comparador
     
@@ -173,7 +230,9 @@ strcmp:  # inicia a função comparador
          
          addi $v0, $0, 0  # o retorno em v0 deve ser 0
          jr $ra  #  retorna a execução normal do programa 
-         
+
+#########################################################################################################################
+
 verifica_andar: # Em a0 deve ser disposto o andara ser verificado e em a1 o ponteiro para o inicio do space de andares
   
   move $t6, $a1  # salva a posição inicial de a1
@@ -192,7 +251,7 @@ verifica_andar: # Em a0 deve ser disposto o andara ser verificado e em a1 o pont
     addi $t6, $t6, 187 # pula para o numero do proximo apartamento
     beq $t6, $t7, apt_n_achado  # verifica se a contagem ja cobriu todos os apartamentos
     j verificador_andara  # retorna ao inicio do loop
-  
+    
   ap_enc:  # retorna a posição que dio andar
     move $v0, $t6  #  move para v0 o retorno
     jr $ra  # retorna para a execução do arquivo
@@ -204,7 +263,9 @@ verifica_andar: # Em a0 deve ser disposto o andara ser verificado e em a1 o pont
 ap_n_encontrado:  # devolve 1 em v0 pq o ap não foi encontrado
     addi $v0, $0, 1 # carrega 1 em v0
     jr $ra # encerra a função
-  
+
+#########################################################################################################################
+
 fim: # finaliza o codigo
   addi $v0, $0, 10
   syscall
