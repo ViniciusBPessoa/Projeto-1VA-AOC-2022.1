@@ -124,42 +124,42 @@ verifica_cmds:
 	la $a0, str_cmd_ad_a			# Lê o endereço da string de comando para adicionar automovel
 	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
 	jal compara_str					# Pula para função que compara strings e volta
-	beq $v0, $0, cmd_valido			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de adicionar automovel, dai pula para função responsável
+	beq $v0, $0, cmd_ad_a			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de adicionar automovel, dai pula para função responsável
 	
 	la $a0, str_cmd_rm_a			# Lê o endereço da string de comando para remover automovel
 	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
 	jal compara_str					# Pula para função que compara strings e volta
-	beq $v0, $0, cmd_valido			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de remover automovel, dai pula para função responsável
+	beq $v0, $0, cmd_rm_a			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de remover automovel, dai pula para função responsável
 	
 	la $a0, str_cmd_lp_ap			# Lê o endereço da string de comando para limpar apartamento
 	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
 	jal compara_str					# Pula para função que compara strings e volta
-	beq $v0, $0, cmd_valido			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de limpar apartamento, dai pula para função responsável
+	beq $v0, $0, cmd_lp_ap			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de limpar apartamento, dai pula para função responsável
 	
 	la $a0, str_cmd_if_ap			# Lê o endereço da string de comando para informações de AP especifico
 	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
 	jal compara_str					# Pula para função que compara strings e volta
-	beq $v0, $0, cmd_valido			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de informações de AP especifico, dai pula para função responsável
+	beq $v0, $0, cmd_if_ap			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de informações de AP especifico, dai pula para função responsável
 	
 	la $a0, str_cmd_if_g			# Lê o endereço da string de comando para informações dos APs em geral
 	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
 	jal compara_str					# Pula para função que compara strings e volta
-	beq $v0, $0, cmd_valido			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de informações dos APs em geral, dai pula para função responsável
+	beq $v0, $0, cmd_if_g			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de informações dos APs em geral, dai pula para função responsável
 	
 	la $a0, str_cmd_s				# Lê o endereço da string de comando para salvar as infos num arquivo
 	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
 	jal compara_str					# Pula para função que compara strings e volta
-	beq $v0, $0, cmd_valido			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de salvar as infos num arquivo, dai pula para função responsável
+	beq $v0, $0, cmd_s				# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de salvar as infos num arquivo, dai pula para função responsável
 	
 	la $a0, str_cmd_r				# Lê o endereço da string de comando para recarregar as infos do arquivo
 	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
 	jal compara_str					# Pula para função que compara strings e volta
-	beq $v0, $0, cmd_valido			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de recarregar as infos do arquivo, dai pula para função responsável
+	beq $v0, $0, cmd_r				# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de recarregar as infos do arquivo, dai pula para função responsável
 	
 	la $a0, str_cmd_f				# Lê o endereço da string de comando para formatar o arquivo
 	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
 	jal compara_str					# Pula para função que compara strings e volta
-	beq $v0, $0, cmd_valido			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de formatar o arquivo, dai pula para função responsável
+	beq $v0, $0, cmd_f				# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de formatar o arquivo, dai pula para função responsável
 	
 	j cmd_invalido					# Caso não entre em nenhum dos branchs significa que o comando digitado é inválido, daí pula para função que escreve "Comando Inválido" no display MMIO
 	
@@ -177,7 +177,74 @@ cmd_ad_m:
 cmd_rm_m:
 	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	addi $a0, $a0, 11				# Soma 11 ao endereço afim de ir para onde começa o numero do AP 
-	addi $a1, $a0, 3				# Soma mais 2 aos 11 somados afim de ir para onde começa o nome do morador
+	addi $a1, $a0, 3				# Soma mais 3 aos 11 somados afim de ir para onde começa o nome do morador
+	
+	# Espaço para colocar a função ou um jump para a função, whatever
+	
+	j fim_leitura					# Pula para função que quebra linha e pula para a main
+	
+# Função de adicionar automóvel	
+cmd_ad_a:
+	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a0, $a0, 8				# Soma 8 ao endereço afim de ir para onde começa o numero do AP 
+	addi $a1, $a0, 3				# Somando 3 é onde começa o tipo do automóvel
+	addi $a2, $a1, 2				# Somando mais 2 é onde começa o tipo do automóvel
+	
+	# Espaço para colocar a função ou um jump para a função, whatever. Lembrar que ainda é preciso chegar na cor do auto
+	
+	j fim_leitura					# Pula para função que quebra linha e pula para a main
+	
+# Função de remover automóvel (falta confirmar com o professor se vai funcionar assim mesmo)	
+cmd_rm_a:
+	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a0, $a0, 8				# Soma 8 ao endereço afim de ir para onde começa o numero do AP 
+	addi $a1, $a0, 3				# Somando 3 é onde começa o modelo do automóvel
+	
+	# Espaço para colocar a função ou um jump para a função, whatever
+	
+	j fim_leitura					# Pula para função que quebra linha e pula para a main
+	
+# Função de limpar AP
+cmd_lp_ap:
+	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a0, $a0, 10				# Soma 10 ao endereço afim de ir para onde começa o numero do AP 
+	
+	# Espaço para colocar a função ou um jump para a função, whatever
+	
+	j fim_leitura					# Pula para função que quebra linha e pula para a main
+	
+# Função de informações de um AP especifico
+cmd_if_ap:
+	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a0, $a0, 8				# Soma 8 ao endereço afim de ir para onde começa o numero do AP 
+	
+	# Espaço para colocar a função ou um jump para a função, whatever
+	
+	j fim_leitura					# Pula para função que quebra linha e pula para a main
+	
+# Função de informações gerais dos APs	
+cmd_if_g:
+	
+	# Espaço para colocar a função ou um jump para a função, whatever
+	
+	j fim_leitura					# Pula para função que quebra linha e pula para a main
+	
+# Função de salvar no arquivo
+cmd_s:
+	
+	# Espaço para colocar a função ou um jump para a função, whatever
+	
+	j fim_leitura					# Pula para função que quebra linha e pula para a main
+	
+# Função de recarregar o arquivo	
+cmd_r:
+	
+	# Espaço para colocar a função ou um jump para a função, whatever
+	
+	j fim_leitura					# Pula para função que quebra linha e pula para a main
+	
+# Função de formatar o arquivo	
+cmd_f:
 	
 	# Espaço para colocar a função ou um jump para a função, whatever
 	
