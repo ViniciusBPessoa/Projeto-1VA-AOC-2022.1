@@ -39,13 +39,15 @@ main:
 	
 # Função que compara strings para ver se são iguais
 compara_str:
+	move $t2, $a2					# Movendo o valor do reg $a2 (range) para o reg $t2
+	move $t3, $a3					# Movendo o valor do reg $a3 (contador) para o reg $t3
+	beq $t2, $t3, str_igual			# Caso o contador chegue no range sem que algum caractere seja diferente, as strings são consideradas iguais
 	lb $t0, 0($a0)					# Lê o byte da string 1
 	lb $t1, 0($a1)					# Lê o byte da string 2
 	bne $t0, $t1, str_diferente		# Caso sejam diferentes, pula pra função que lida com isso
-	beq $t0, $0, filtro_str0		# Caso a string 1 acabe, vai para o filtro que verifica se a string 2 acabou também.
-	beq $t1, $0, filtro_str1		# Caso a string 2 acabe, vai para o filtro que verifica se a string 1 acabou também.
 	addi $a0, $a0, 1				# Adiciona 1 ao endereço da string 1 para ir para o próximo caractere
 	addi $a1, $a1, 1				# Adiciona 1 ao endereço da string 2 para ir para o próximo caractere
+	addi $a3, $a3, 1				# Adiciona 1 ao contador
 	j compara_str					# Jump para continuar o loop
 
 # Função que trata as strings caso sejam diferentes
@@ -57,16 +59,6 @@ str_diferente:
 str_igual:
 	move $v0, $0					# Retorna 0 em v0
 	jr $ra							# Volta a execução do topo da pilha
-
-# Filtro da string 1
-filtro_str0:
-	beq $t1, $0, str_igual			# Caso a string 2 tenha terminado também é porque são iguais, daí vai para função correspondente
-	j str_diferente					# Caso não, vai para função de strings diferentes
-
-# Filtro da string 2	
-filtro_str1:
-	beq $t0, $0, str_igual			# Caso a string 1 tenha terminado também é porque são iguais, daí vai para função correspondente
-	j str_diferente					# Caso não, vai para função de strings diferentes
 	
 # Função que escreve a string padrão do shell a ser exibinda no MMIO toda vez há quebra de linha (e na primeira execução também)
 shell_str_loop:
@@ -120,51 +112,71 @@ verifica_cmds:
 	
 	la $a0, str_cmd_ad_m			# Lê o endereço da string de comando para adicionar morador
 	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a2, $0, 11				# Adiciona a quantidade de caracteres necessárias para a comparação
+	move $a3, $0					# Instanciona um contador para compara_str
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_ad_m			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de adicionar morador, dai pula para função responsável
 	
 	la $a0, str_cmd_rm_m			# Lê o endereço da string de comando para remover morador
 	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a2, $0, 11				# Adiciona a quantidade de caracteres necessárias para a comparação
+	move $a3, $0					# Instanciona um contador para compara_str
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_rm_m			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de remover morador, dai pula para função responsável
 	
 	la $a0, str_cmd_ad_a			# Lê o endereço da string de comando para adicionar automovel
-	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
+	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a2, $0, 8					# Adiciona a quantidade de caracteres necessárias para a comparação
+	move $a3, $0					# Instanciona um contador para compara_str			
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_ad_a			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de adicionar automovel, dai pula para função responsável
 	
 	la $a0, str_cmd_rm_a			# Lê o endereço da string de comando para remover automovel
-	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
+	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário	
+	addi $a2, $0, 8					# Adiciona a quantidade de caracteres necessárias para a comparação
+	move $a3, $0					# Instanciona um contador para compara_str		
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_rm_a			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de remover automovel, dai pula para função responsável
 	
 	la $a0, str_cmd_lp_ap			# Lê o endereço da string de comando para limpar apartamento
-	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
+	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a2, $0, 10				# Adiciona a quantidade de caracteres necessárias para a comparação
+	move $a3, $0					# Instanciona um contador para compara_str			
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_lp_ap			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de limpar apartamento, dai pula para função responsável
 	
 	la $a0, str_cmd_if_ap			# Lê o endereço da string de comando para informações de AP especifico
-	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
+	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a2, $0, 8					# Adiciona a quantidade de caracteres necessárias para a comparação
+	move $a3, $0					# Instanciona um contador para compara_str			
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_if_ap			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de informações de AP especifico, dai pula para função responsável
 	
 	la $a0, str_cmd_if_g			# Lê o endereço da string de comando para informações dos APs em geral
-	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
+	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a2, $0, 10				# Adiciona a quantidade de caracteres necessárias para a comparação
+	move $a3, $0					# Instanciona um contador para compara_str			
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_if_g			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de informações dos APs em geral, dai pula para função responsável
 	
 	la $a0, str_cmd_s				# Lê o endereço da string de comando para salvar as infos num arquivo
-	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
+	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a2, $0, 6				# Adiciona a quantidade de caracteres necessárias para a comparação
+	move $a3, $0					# Instanciona um contador para compara_str			
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_s				# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de salvar as infos num arquivo, dai pula para função responsável
 	
 	la $a0, str_cmd_r				# Lê o endereço da string de comando para recarregar as infos do arquivo
-	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
+	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a2, $0, 10				# Adiciona a quantidade de caracteres necessárias para a comparação
+	move $a3, $0					# Instanciona um contador para compara_str			
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_r				# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de recarregar as infos do arquivo, dai pula para função responsável
 	
 	la $a0, str_cmd_f				# Lê o endereço da string de comando para formatar o arquivo
-	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário			
+	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a2, $0, 8				# Adiciona a quantidade de caracteres necessárias para a comparação
+	move $a3, $0					# Instanciona um contador para compara_str			
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_f				# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de formatar o arquivo, dai pula para função responsável
 	
@@ -172,6 +184,7 @@ verifica_cmds:
 	
 # Função de adicionar morador	
 cmd_ad_m:
+	j cmd_valido
 	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	addi $a0, $a0, 11				# Soma 11 ao endereço afim de ir para onde começa o numero do AP 
 	move $t1, $a0
@@ -415,6 +428,16 @@ cmd_invalido:
 	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
 	addi $s1, $s1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
 	j cmd_invalido					# Jump para continuar o loop
+	
+cmd_valido:
+	lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
+    andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
+    beq $t1, $zero, cmd_valido	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
+	lb $t2, 0($s0)					# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
+	beq $t2, $zero, fim_leitura		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
+	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
+	addi $s0, $s0, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
+	j cmd_valido					# Jump para continuar o loop
 
 # Função auxiliar ao fim de leitura de um comando
 fim_leitura:
