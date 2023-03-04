@@ -10,15 +10,16 @@
 
 main:
   
-  jal leArquivo
+   jal leArquivo
   addi $s2, $a1, 0
   la $a0, ap
   la $a1, nome
-
   jal incerirPessoa
-  
+
    la $a0, ap
-  jal remover_pessoa
+   la $a1, nome
+   jal remover_pessoa
+
   
   j fim
 
@@ -79,9 +80,11 @@ remover_pessoa:  # deve receber em a0 o apartamento e em a1 o nome
   
   move $t1, $a1 # salva o nome da pessoa para utilização futura
   move $a1, $s2 # recebe a posição inicial do meu space
+  move $t9, $a0  # salva o apartamento para utilização posterior
   
   # salva as variaveis utilizadas para evitar problemas 
-  addi $sp, $sp, -8  # salva o espaço em memoria par asalvar os registradores
+  addi $sp, $sp, -12  # salva o espaço em memoria par asalvar os registradores
+  sw $t9, 8($sp) # salvando o apartamento na memoria
   sw $t1, 4($sp)  # salvando o nome da pessoa
   sw $ra, 0($sp)  # salvando o registrador de onde estavamos no codigo
     
@@ -91,7 +94,8 @@ remover_pessoa:  # deve receber em a0 o apartamento e em a1 o nome
   # carregha todas os registradores usadas
   lw $ra, 0($sp)  # resgatando o registrador de onde estavamos no codigo
   lw $t1, 4($sp)  # resgatando o nome da pessoa
-  addi $sp, $sp, 8  # resgatando o espaço em memoria par asalvar os registradores
+  lw $t9, 8($sp)  # resgatando o apartamento na memoria
+  addi $sp, $sp, 12  # resgatando o espaço em memoria par asalvar os registradores
   
   beq $v0, -1, ap_n_encontrado  # verifica se o aptamento foi encontrado 
   addi $t2, $v0, 3  # adicionando 3 no ponteiro ele ira ate a posição do primeiro nome dos moradores
@@ -103,7 +107,8 @@ remover_pessoa:  # deve receber em a0 o apartamento e em a1 o nome
     move $a1,  $t1  # adiciona ao argumento a1 a posição que ele deve utilizar na busca
     
     # salva as variaveis utilizadas para evitar problemas 
-    addi $sp, $sp, -16  # libera espaço na memoria para salvar os registradores antes da função
+    addi $sp, $sp, -20  # libera espaço na memoria para salvar os registradores antes da função
+    sw $t9, 16($sp)  # armazena o apartamento para verificação futura
     sw $t1, 12($sp)  # armazena o registrador com a posição do nome na função ne memoria
     sw $t2, 8($sp)  # armazena o registrador com a posição do nome nos apartamentos
     sw $t3, 4($sp)  # armazena o registrador com a contagem de pessoas
@@ -116,7 +121,8 @@ remover_pessoa:  # deve receber em a0 o apartamento e em a1 o nome
     lw $t3, 4($sp)  # recebendo o registrador com a contagem de pessoas
     lw $t2, 8($sp)  # recebendo o registrador com a posição do nome nos apartamentos
     lw $t1, 12($sp)  # recebendo o registrador com a posição do nome na função ne memoria
-    addi $sp, $sp, 16  # recebendo o espaço na memoria para salvar os registradores antes da função
+    lw $t9, 16($sp)  # resgatando o espaço em memoria par asalvar os registradores
+    addi $sp, $sp, 20  # recebendo o espaço na memoria para salvar os registradores antes da função
     
     addi $t3, $t3, 1  # adiciona um ao contador de pessoas verificadas
     beq $v0, 0, pessoa_encontrada  # verifica se o nome a ser removido é esse
@@ -128,15 +134,28 @@ remover_pessoa:  # deve receber em a0 o apartamento e em a1 o nome
     addi $v0, $0, 1 # carrega 1 em v0
     jr $ra # encerra a função
 
-  pessoa_encontrada:
-    addi $t1,$0, 0  # 
-    lb $t3, 0($t2)
-    beq $t3, 0, apagado
-    sb $t1, 0($t2)
-    addi $t2, $t2, 1
-    j pessoa_encontrada
+  pessoa_encontrada:  # função que vai remover a pessoa em si
+    addi $t1,$0, 0  #  adiciona 0 a t1 para que o mesmo substitua o nome da pessoa
+    lb $t3, 0($t2)  # carrega o qeu esta na memoria para verifica rse o mesmo ja foi removido
+    beq $t3, 0, apagado  # verifica se ele foi removido | caso seja va para apagado
+    sb $t1, 0($t2)  #  remove o caracter em questão
+    addi $t2, $t2, 1  # adiciona 1 para buscar o proximo caracter
+    j pessoa_encontrada  # retorna ao loop
   
-  apagado:
+  apagado:  # apagado:  deve verificar a limpesa do AP
+  
+    addi $sp, $sp, -8
+    sw $t9, 0($sp)
+    sw $ra, 4($sp)
+    move $a0, $t9
+    
+    jal verifica_ap  # verifica se o apartamneto esta vasio
+    
+    lw $ra, 4($sp)
+    lw $t9, 0($sp)
+    addi $sp, $sp, 8
+    
+    beq $v0, 2, esvasia_apt  # caso o ap esteja vasio, limpar ele inteiro
     jr $ra # encerra a função
   
 ######################################################################################################################### 
@@ -162,7 +181,7 @@ leArquivo:
 
   #Fecha o arquivo
 
-  li $v0, 16 			#fecha arquivo
+        li $v0, 16 			#fecha arquivo
 	move $a0, $s1 			#copia para o parametro $a0 o descritor guarado em $s0
 	syscall 			#executa função
 
@@ -235,6 +254,7 @@ strcmp:  # inicia a função comparador
 
 verifica_andar: # Em a0 deve ser disposto o andara ser verificado e em a1 o ponteiro para o inicio do space de andares
   
+  move $a1, $s2
   move $t6, $a1  # salva a posição inicial de a1
   addi $t7, $0, 0  # salva em t1 0
   addi $t7, $a1, 7480  # t7 marca o fim doa aps
@@ -266,6 +286,59 @@ ap_n_encontrado:  # devolve 1 em v0 pq o ap não foi encontrado
 
 #########################################################################################################################
 
+verifica_ap: # Percorre um apartamento verificando se está vazio - O número do ap deve ser informado em a0
+  addi $sp, $sp, -4  # libera espaço na memoria para salvar os registradores antes da função
+  sw $ra, 0($sp)  # salvando o registrador de onde estavamos no codigo
+  
+  jal verifica_andar
+  
+  lw $ra, 0($sp) # recebendo o registrador de onde estavamos no codigo
+  addi $sp, $sp, 4  # recebendo o espaço na memoria para salvar os registradores antes da função
+  
+  addi $t2, $v0, 3 # Carrega a posição da primeira pessoa do AP
+  addi $t4, $0, 0 # inicia meu contador de pessoas caso seja 5 o a paratamento está cheio
+  
+  
+  vaga_ap:
+    lb $t3, 0($t2)  # carrega 1 posição de cada nome para saber se aquele ap esta disponivel
+    bne $t3, 0, apt_ocupado  # pula para a area de escriata ja que a vaga esta disponivel
+    addi $t2, $t2, 20  # pula para o proximo nome a verificar
+    addi $t4, $t4, 1  # Incrementa o contador de pessoas verificadas
+    beq $t4, 5, apt_vazio  # caso todos os possiveis locais para incerir pessoas foram preenchidos
+    j vaga_ap # Reinicia o loop
+      
+      
+  apt_ocupado: # Caso exista uma pessoa no AP, retorna a função.
+    addi $v0, $0, 1 # Carrega 1 em v0 
+    jr $ra # Retorna a função
+    
+  apt_vazio: # Caso o apartamento esteja vazio, retorna a função.
+    addi $v0, $0, 2 # Carrega 2 em v0 
+    jr $ra # Retorna a função
+    
+#########################################################################################################################
+
+esvasia_apt:  # recebe em a0 o endereço do apt e em a1 a horigem dos apartamentos
+  addi $sp, $sp, -4  # armazena o ra para utilização futura
+  sw $ra, 0($sp)  # armazena o ra para utilização futura
+  
+  jal verifica_andar
+  
+  lw $ra, 0($sp)  # recupera o ra para utilização futura
+  addi $sp, $sp, 4 # recupera o ra para utilização futura
+  
+  beq $v0, -1, ap_n_encontrado  # verifica se o apartamento não foi encontrado
+  addi $t3, $v0, 187  #  gera o fim da lisat do aparatamento
+  addi $t1, $v0, 3  # vai ate o inicio do arrey a ser testado
+  addi $t2, $0, 0  # inicia o contrador de caracteres
+  
+  removedor: # remove todo o apartamento em si
+    sb $t2, 0($t1)  # salva /0 na memoria
+    addi $t1, $t1, 1 # adiciona 1 ao contador
+    bne $t1, $t3, removedor  # verifica o fim da remoção
+    jr $ra  #  velta para o fim da dunção
+
+#########################################################################################################################
 fim: # finaliza o codigo
   addi $v0, $0, 10
   syscall
