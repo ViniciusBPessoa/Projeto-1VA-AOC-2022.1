@@ -342,3 +342,14 @@ esvasia_apt:  # recebe em a0 o endereço do apt e em a1 a horigem dos apartamento
 fim: # finaliza o codigo
   addi $v0, $0, 10
   syscall
+
+verificador_info_geral:
+  move $t1, $s2
+  
+  loop:
+    move $a0, $t1
+    
+    addi 
+    
+    jal verifica_ap
+    

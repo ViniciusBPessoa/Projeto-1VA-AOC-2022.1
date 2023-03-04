@@ -26,15 +26,16 @@
 
 .text
 main:
+
+        jal leArquivo                              # pula ate a função qeu ira ler o aquivo
+        addi $s2, $a1, 0                        # salva o space em s2
+        
 	la $s0, msg_c_v					# Lê o endereço da string teste de comando válido
 	la $s1, msg_c_i					# Lê o endereço da string teste de comando inválido
 	la $a1, str_padrao				# Lê o endereço da string padrão a ser exibida no MMIO
 	jal shell_str_loop				# Pula para a função que escreve a string padrão no MMIO e volta
 	la $a1, terminal_cmd			# Lê o endereço da variável que armazena o que foi digitado no MMIO
 	j rcvr_loop						# Pula para o loop que aguarda as inserções no MMIO
-	
-	jal leArquivo                              # pula ate a função qeu ira ler o aquivo
-        addi $s2, $a1, 0                        # salva o space em s2
 	
 # Função que compara strings para ver se são iguais
 compara_str:
@@ -173,6 +174,10 @@ verifica_cmds:
 cmd_ad_m:
 	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	addi $a0, $a0, 11				# Soma 11 ao endereço afim de ir para onde começa o numero do AP 
+	move $t1, $a0
+	addi $t1, $t1, 2
+	move $t2, $0
+	sb $t2, 0($t1)
 	addi $a1, $a0, 3				# Soma mais 2 aos 11 somados afim de ir para onde começa o nome do morador
 	
 	incerirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o nome a ser incerrido: em $s2 esta a lista de itens em $s2 estara a posição inicial dos APs
@@ -565,4 +570,3 @@ leArquivo:
 	syscall 			#executa função
 
 	jr $ra	
-
