@@ -22,7 +22,7 @@
 	msg_c_i: .asciiz "Comando Invalido"		# String usada apenas para testes de comandos inválidos digitados no MMIO
 	
 	apt_space: .space 7480  				#  espaços dedicados para os apartamentos
- 	localArquivo: .asciiz "C:/aps.txt"  			# local no computador onde o arquivo original se mantem
+ 	localArquivo: .asciiz "C:/Users/Irlan/Desktop/aps.txt"  			# local no computador onde o arquivo original se mantem
 
 
 .text
@@ -347,14 +347,150 @@ cmd_rm_m:
 	
 # Função de adicionar automóvel	
 cmd_ad_a:
-	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	la $a0, terminal_cmd				# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	
 	addi $a0, $a0, 8				# Soma 8 ao endereço afim de ir para onde começa o numero do AP 
+	addi $t1, $a0, 2
+	sb $0, 0($t1) 					#ad_auto-01/0c-modelo-cor
+	
 	addi $a1, $a0, 3				# Somando 3 é onde começa o tipo do automóvel
-	addi $a2, $a1, 2				# Somando mais 2 é onde começa o tipo do automóvel
+	addi $t1, $a1, 1
+	sb $0, 0($t1) 					#ad_auto-01/0c/0modelo-cor
 	
-	# Espaço para colocar a função ou um jump para a função, whatever. Lembrar que ainda é preciso chegar na cor do auto
+	addi $a2, $a1, 2				# Somando mais 2 é onde começa o modelo do automóvel
+	move $t7, $a2
 	
-	j fim_leitura					# Pula para função que quebra linha e pula para a main
+	addi $t4, $0, 0					#Inicia um contador para caracteres máximos
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	jal checaTraco
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	addi $a3, $a2, 1				# Soma mais 1 até a cor do auto
+	move $a2, $t7
+	
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	jal inserirAuto
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	j fim_leitura
+	
+	checaTraco:
+	    lb $t2, 0($a2)				#Carrego o caractere inicial de $a2
+	    beq $t2, 45, substitui			#Checo se esse caractere é igual a -, se sim chama substituir
+	    #beq $t4, 20, cmd_invalido			#Chego se passado 20 caracteres ainda não achou o -
+      	    addi $a2, $a2, 1				#Pulo pro proximo caractere
+      	    addi $t4, $t4, 1				#Incremento o contador
+	    j checaTraco
+	    
+	    substitui:
+	        sb $0, 0($a2)				#Sbstitui - por \0
+	        jr $ra
+      	    
+inserirAuto: #$a0 AP - $a1 TIPO AUTO (C OU M) - $a2 MODELO - $a3 COR
+    addi $t0, $s2, 0			#Posicao inicial do arquivo
+    
+    addi $t1, $a0, 0			#Carrega AP em $t1
+    addi $t2, $a1, 0			#Carrega TIPO em $t2
+    addi $t3, $a2, 0			#Carrega MODELO em $t3
+    addi $t4, $a3, 0			#Carrega COR em $t4
+    
+    move $a0, $t1			#Parametro $a0 = ap
+    move $a1, $t0			#Parametro $a1 = posição inicial
+    
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+    
+    jal verifica_andar			#Recebe andar em $a0 e posição inicial em $a1
+    
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    
+    bne $v0, -1, verificarVaga		#Caso o andar exista, verifica se há vaga
+    
+    #Retorna mensagem “Falha: AP invalido
+    jr $ra				#Retorna a quem chamou inserirAuto
+    
+    verificarVaga:
+    	add $t5, $v0, 103		#Guarda em $t5 a posição do andar($v0) junto a posição do primeiro auto($t0)
+    	
+    	lb $t7, 0($t5)			#Pega o tipo (se houver) do auto na vaga, caso nao houver $t7 = 0
+    	lb $t8, 0($t2)			#Pega o tipo do auto passado
+    	
+    	beq $t8, 99,  autoValidado
+    	beq $t8, 109, autoValidado
+    	
+    	#Retornar mensagem “Falha: tipo invalido”
+    	jr $ra
+    	
+    	autoValidado:
+    	    
+    	    beq $t7, 99,  cancelaInsc	#Caso houver 1 carro na vaga, não permitir mais inserção de auto
+    	    beq $t7, 109, insereMoto	#Caso houver 1 moto na vaga, permitir inserção de outra moto
+    	    beq $t7, 0,   insereAuto	#Caso não huver nenhum auto, permitir inserção de qualquer auto
+    	
+    	insereAuto:
+    	
+    	    move $a0, $t5		#Parametro em $a0 = posição a ser inserida
+    	    move $a1, $t2		#Parametro em $a1 = tipo do auto
+    	    move $a2, $t3		#Parametro em $a2 = modelo do auto
+    	    move $a3, $t4		#Parametro em $a3 = cor do auto
+    	    
+    	    addi $sp, $sp, -4
+    	    sw $ra, 0($sp)
+    	    
+    	    jal strcpy			
+    	    
+    	    addi $a0, $a0, 2		#Pula para a posição da vaga em que insere o modelo
+    	    move $a1, $a2		#Parametro em $a1 = modelo do auto
+    	    jal strcpy			
+    	    
+    	    addi $a0, $a0, 20		#Pula para a posição da vaga em que insere a cor
+    	    move $a1, $a3		#Parametro em $a1 = cor do auto
+    	    jal strcpy		
+    	    
+    	    lw $ra, 0($sp)
+    	    addi $sp, $sp, 4
+    	    
+    	    jr $ra
+    	
+    	insereMoto:
+    	
+    	    addi $t8, $t5, 42		#Carrega em $t8 a posição da próxima vaga
+    	    lb $t9, 0($t8)
+    	    beq $t8, 109, cancelaInsc	#Caso houver uma segunda moto, não permitir a inserção de outra moto
+    	    
+    	    move $a0, $t8		#Parametro em $a0 = posição a ser inserida
+    	    move $a1, $t2		#Parametro em $a1 = tipo do auto
+    	    move $a2, $t3		#Parametro em $a2 = modelo do auto
+    	    move $a3, $t4		#Parametro em $a3 = cor do auto
+    	    
+    	    addi $sp, $sp, -4
+    	    sw $ra, 0($sp)
+    	    
+    	    jal strcpy			
+    	    
+    	    addi $a0, $a0, 2		#Pula para a posição da vaga em que insere o modelo
+    	    move $a1, $a2		#Parametro em $a1 = modelo do auto
+    	    jal strcpy			
+    	    
+    	    addi $a0, $a0, 20		#Pula para a posição da vaga em que insere a cor
+    	    move $a1, $a3		#Parametro em $a1 = cor do auto
+    	    jal strcpy			
+    	    
+    	    lw $ra, 0($sp)
+    	    addi $sp, $sp, 4
+    	    
+    	    jr $ra
+    	    
+    	cancelaInsc:
+    	   #Retornar mensagem “Falha: AP com numero max de automóveis"
+    	   jr $ra
+    	    
+#######################################################################################################################
 	
 # Função de remover automóvel (falta confirmar com o professor se vai funcionar assim mesmo)	
 cmd_rm_a:
