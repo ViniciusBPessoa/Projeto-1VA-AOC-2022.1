@@ -8,6 +8,8 @@
 	barra_n: .byte 10					# Valor equivalente na tabela ASCII da quebra de linha (\n)
 	terminal_cmd: .space 100			# Espaço/Variável para armazenar o que é digitado pelo usuário no MMIO
 	
+	
+	
 	str_cmd_ad_m: .asciiz "ad_morador-"		# String de comando para adicionar morador
 	str_cmd_rm_m: .asciiz "rm_morador-"		# String de comando para remover morador
 	str_cmd_ad_a: .asciiz "ad_auto-"		# String de comando para adicionar automovel
@@ -20,16 +22,24 @@
 	str_cmd_f: .asciiz "formatar"			# String de comando para formatar o arquivo
 	msg_c_v: .asciiz "Comando Valido"		# String usada apenas para testes de comandos válidos digitados no MMIO
 	msg_c_i: .asciiz "Comando Invalido"		# String usada apenas para testes de comandos inválidos digitados no MMIO
+	msg_e_n_m_m:  .asciiz "Falha: AP com numero max de moradores"
+	msg_e_n_ap: .asciiz "Falha: AP invalido"
+	
+	msg_info_ap0: .asciiz "AP: "
+	msg_info_ap1: .asciiz "Moradores:"
 	
 	apt_space: .space 7480  				#  espaços dedicados para os apartamentos
- 	localArquivo: .asciiz "C:/Users/Irlan/Desktop/aps.txt"  			# local no computador onde o arquivo original se mantem
+ 	localArquivo: .asciiz "C:/aps.txt"  			# local no computador onde o arquivo original se mantem
 
 
 .text
+
+awake:
+         jal leArquivo                              # pula ate a função qeu ira ler o aquivo
+        addi $s2, $a1, 0                        # salva o space em s2
+        j main
 main:
 
-        jal leArquivo                              # pula ate a função qeu ira ler o aquivo
-        addi $s2, $a1, 0                        # salva o space em s2
         
 	la $s0, msg_c_v					# Lê o endereço da string teste de comando válido
 	la $s1, msg_c_i					# Lê o endereço da string teste de comando inválido
@@ -185,22 +195,18 @@ verifica_cmds:
 cmd_ad_m:
 	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	addi $a0, $a0, 11				# Soma 11 ao endereço afim de ir para onde começa o numero do AP 
-	move $t1, $a0					#  ad_morador-02/0vini
-	addi $t1, $t1, 2
-	move $t2, $0
-	sb $t2, 0($t1)
-	addi $a1, $a0, 3				# Soma mais 2 aos 11 somados afim de ir para onde começa o nome do morador
+        move $t1, $a0					#  ad_morador-02/0vini
+        addi $t1, $t1, 2
+        move $t2, $0
+        sb $t2, 0($t1)
+        addi $a1, $a0, 3				# Soma mais 2 aos 11 somados afim de ir para onde começa o nome do morador
 	
 	
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
-	move $s5, $a0
-	move $s6, $a1
-	lb $s7, 0($a0)
-	sb $s7, 29($s2)
-	
 	jal inserirPessoa
+	
         lw $ra, 0($sp)
         addi $sp, $sp, 4
         j fim_leitura					# Pula para função que quebra linha e pula para a main
@@ -208,32 +214,39 @@ cmd_ad_m:
 inserirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o nome a ser incerrido: em $s2 esta a lista de itens em $s2 estara a posição inicial dos APs
 # os possiveis erros estão em $v0 sendo eles 1 ou 2, 1w = apartamento não encontrado
   
+  sb $0, 0($s2)
+  
   addi $t7 , $s2, 0  # carrega a primeira posição do espaço disponivel para o sistema de apartamneto
   addi $t2, $t7, 7480 # maior valor possivel  a ser escrito no sistema
   addi $t4, $a1, 0  #  salva o que esta em a1, para utilizar em algumas outras funçoes
-  j verificador_andar
   
-  verificador_andar: 
-    addi $a1, $t7, 0  # carrega a  posição do espaço disponivel em vigor para ser comparada
-    addi $t9, $ra, 0  # salva onde estava no codigo
-    addi $t8, $a0, 0  # salva a posição inicial do meu ap a ser comparado
-    jal strcmp  # verifica se as strings são iguais (caso sejam: o apartamento foi achado)
-    addi $ra, $t9, 0 # recupera onde estava no codigo 
-    addi $a0, $t8, 0 # recupera a posição inicial do meu ap a ser comparado
-    beq $v0, 0, ap_insere  # confere se as strings são iguais  se sim envia para a inserção
-
-    addi $t7, $t7, 187 # pula para o numero do proximo apartamento
-    beq $t2, $t7, ap_n_encontrado  # verifica se a contagem ja cobriu todos os apartamentos
-    j verificador_andar  # retorna ao inicio do loop
-    
+  addi $sp, $sp, -16
+  sw $t7, 0($sp)
+  sw $s2, 4($sp)
+  sw $t4, 8($sp)
+  sw $ra, 12($sp)
+  
+  jal verifica_andar
+  
+  lw $ra, 12($sp)
+  lw $t4, 8($sp)
+  lw $s2, 4($sp)
+  lw $t7, 0($sp)
+  addi $sp, $sp, -16 
+  
+  beq $v0, -1, ap_n_encontrado
+  move $t7, $v0
+  j ap_insere
+  
   ap_insere:  # se chegarmos aqui é porque o apartamento foi encontrado, agora vamos verificar se o ap pode receber mais uma pessoa
     
     addi $t7, $t7, 3 # tendo recebi o apartamento vamos vasculhar jogando para a 1 posição das pessoas
     addi $t5, $0, 0 # inicia meu contador de pessoas caso seja 5 o a paratamento está cheio
+    j vaga
     
     vaga:  # inicia um loop que verifica vaga por vaga
       
-      lb $t3, 0($t7)  # carrega 1  ção de de cada nome para saber se aquele ap esta disponivel
+      lb $t3, 0($t7)  # carrega 1  caracter de de cada nome para saber se aquele ap esta disponivel
       beq $t3, 0, vaga_disponivel  # pula para a area de escriata ja que a vaga esta disponivel
       addi $t7, $t7, 20  # pula para o proximo nome a verificar
       addi $t5, $t5, 1  # verifica se o total de pessoas daquele ap ja foi verificado
@@ -245,21 +258,52 @@ inserirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o
     addi $a0, $t7, 0 # carrega em a0 o que devemos incerir no local do nome
     addi $a1, $t4, 0 # carrega o espaço a ser incerido
     addi $t9, $ra, 0 # salva a posição original do arquivo
+    
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+            
     jal strcpy  # copia a string no novo local controlando o numero de caracteres par aque o mesmo não utrapasse 19
-    addi $ra, $t9, 0 # recupera a posição original do arquivo
-
+    
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
     jr $ra # ja que a função foi bem sucedida retorna ao inicio
     
     apt_cheio: # caso o apartamento esteja cheio retor na o erro 2
       addi $v0, $0, 2 # carrega 2 no retorno 
+      la $a1, msg_e_n_m_m
+      mensagem_de_erro_loop:
+        lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
+        andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
+        beq $t1, $zero, mensagem_de_erro_loop	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
+	lb $t2, 0($a1)					# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
+	beq $t2, $zero, fim_leitura		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
+	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
+	addi $a1, $a1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
+	j mensagem_de_erro_loop					# Jump para continuar o loop
       jr $ra # acaba a função
+
 
 	
 # Função de remover morador	
 cmd_rm_m:
+	
 	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	addi $a0, $a0, 11				# Soma 11 ao endereço afim de ir para onde começa o numero do AP 
-	addi $a1, $a0, 3				# Soma mais 3 aos 11 somados afim de ir para onde começa o nome do morador
+        move $t1, $a0					#  ad_morador-02/0vini
+        addi $t1, $t1, 2
+        move $t2, $0
+        sb $t2, 0($t1)
+        addi $a1, $a0, 3				# Soma mais 2 aos 11 somados afim de ir para onde começa o nome do morador
+	
+	
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	jal remover_pessoa
+	
+        lw $ra, 0($sp)
+        addi $sp, $sp, 4
+        j fim_leitura					# Pula para função que quebra linha e pula para a main
 	
 	remover_pessoa:  # deve receber em a0 o apartamento e em a1 o nome
   
@@ -494,11 +538,196 @@ inserirAuto: #$a0 AP - $a1 TIPO AUTO (C OU M) - $a2 MODELO - $a3 COR
 	
 # Função de remover automóvel (falta confirmar com o professor se vai funcionar assim mesmo)	
 cmd_rm_a:
-	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
-	addi $a0, $a0, 8				# Soma 8 ao endereço afim de ir para onde começa o numero do AP 
-	addi $a1, $a0, 3				# Somando 3 é onde começa o modelo do automóvel
+	la $a0, terminal_cmd				# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	
-	# Espaço para colocar a função ou um jump para a função, whatever
+	addi $a0, $a0, 8				# Soma 8 ao endereço afim de ir para onde começa o numero do AP 
+	addi $t1, $a0, 2
+	sb $0, 0($t1) 					#ad_auto-01/0c-modelo-cor
+	
+	addi $a1, $a0, 3				# Somando 3 é onde começa o tipo do automóvel
+	addi $t1, $a1, 1
+	sb $0, 0($t1) 					#ad_auto-01/0c/0modelo-cor
+	
+	addi $a2, $a1, 2				# Somando mais 2 é onde começa o modelo do automóvel
+	move $t7, $a2
+	
+	addi $t4, $0, 0					#Inicia um contador para caracteres máximos
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	jal checaTraco2
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	addi $a3, $a2, 1				# Soma mais 1 até a cor do auto
+	move $a2, $t7
+	
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	jal removerAuto
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	j fim_leitura
+	
+	checaTraco2:
+	    lb $t2, 0($a2)				#Carrego o caractere inicial de $a2
+	    beq $t2, 45, substitui2			#Checo se esse caractere é igual a -, se sim chama substituir
+	    #beq $t4, 20, cmd_invalido			#Chego se passado 20 caracteres ainda não achou o -
+      	    addi $a2, $a2, 1				#Pulo pro proximo caractere
+      	    addi $t4, $t4, 1				#Incremento o contador
+	    j checaTraco2
+	    
+	    substitui2:
+	        sb $0, 0($a2)				#Sbstitui - por \0
+	        jr $ra
+      	    
+	
+	removerAuto: #a0 AP - a1 tipo - a2 modelo - a3 cor
+    addi $t0, $s2, 0			#Posicao inicial dos auto
+
+    addi $t1, $a0, 0			#Carrega AP em $t1
+    addi $t2, $a2, 0			#Carrega MODELO em $t2
+    addi $t6, $a1, 0			#Carrega TIPO em $t2
+    addi $t7, $a3, 0			#Carrega COR em $t2
+    
+    move $a0, $t1			#Parametro $a0 = ap
+    move $a1, $t0			#Parametro $a1 = posição inicial
+    
+    addi $sp, $sp, -24
+    sw $t7, 20($sp) 
+    sw $t6, 16($sp) 
+    sw $t2, 12($sp)
+    sw $t1, 8($sp) 
+    sw $t0, 4($sp)
+    sw $ra, 0($sp)
+    jal verifica_andar			#Recebe andar em $a0 e posição inicial em $a1
+    lw $ra, 0($sp)
+    lw $t0, 4($sp)
+    lw $t1, 8($sp) 
+    lw $t2, 12($sp)
+    lw $t6, 16($sp)
+    lw $t7, 20($sp)
+    addi $sp, $sp, 24
+    
+    
+    addi $t0, $v0, 0			#Acessa apartamento n recebido por verifica_andar
+    
+    bne $v0, -1, buscarAuto		#Caso o andar exista, verifica se há vaga
+    
+    #Retorna mensagem “Falha: AP invalido"
+    jr $ra				#Retorna a quem chamou inserirAuto
+    
+    buscarAuto:
+    	addi $t3, $t0, 105 		#Pula para o modelo de auto do apartamento n
+    	
+    	move $a0, $t2			#Parametro para strcmp passando o modelo dado
+    	move $a1, $t3			#Parametro para strcmp passando o modelo em vigor
+    	move $a2, $t6			#Parametro para strcmp passando o tipo dado
+    	move $a3, $t7			#Parametro para strcmp passando a cor dada
+    	
+    	addi $sp, $sp, -4
+    	sw   $ra, 0($sp)
+    	jal checaAuto
+    	lw   $ra, 0($sp)
+    	addi $sp, $sp, 4
+    	
+    	bne $s7, 0, autoInvalido 	#Checa se auto com modelo passado existe
+    	bne $s6, 0, autoInvalido  	#Checa se auto com tipo passado existe
+    	bne $s5, 0, autoInvalido  	#Checa se auto com cor passada existe
+    	
+        move $t6, $t3			#Copia a posição do modelo atual para t6
+    	beq  $s7, $0, removeModelo	#Verefica se o auto na posicao é o auto procuradom, se sim, remova
+    	
+    	
+    	addi $t3, $t3, 42		#Pula para prox modelo de auto do apartamento n
+        
+    	move $a0, $t2			#Parametro para strcmp passando o modelo dado
+    	move $a1, $t3			#Parametro para strcmp passando o modelo em vigor
+    	move $a2, $t1			#Parametro para strcmp passando o tipo em vigor
+    	move $a3, $t4			#Parametro para strcmp passando a cor em vigor
+        	
+    	addi $sp, $sp, -4
+    	sw   $ra, 0($sp)
+    	jal checaAuto
+    	lw   $ra, 0($sp)
+    	addi $sp, $sp, 4
+    	
+    	bne $s7, 0, autoInvalido 	#Checa se auto com modelo passado existe
+    	bne $s6, 0, autoInvalido  	#Checa se auto com tipo passado existe
+    	bne $s5, 0, autoInvalido  	#Checa se auto com cor passada existe
+    	
+    	move $t6, $t3			#Copia a posição do modelo atual para t6
+    	beq  $s7, $0, removeModelo	#Verefica se o auto na posicao é o auto procuradom, se sim, remova
+    	
+    	#Retorna mensagem "Falha: automóvel nao encontrado"
+    	jr $ra
+    	
+    checaAuto:
+    	addi $sp, $sp, -20
+    	sw   $t0, 16($sp)
+    	sw   $t1, 12($sp)
+    	sw   $t2, 8($sp)
+    	sw   $t3, 4($sp)
+    	sw   $ra, 0($sp)
+    	
+    	jal strcmp  			#Compara as strings de modelo
+    	move $s7, $v0			#Salva resultado da função em $s7
+    	
+    	move $a0, $a2			#Parametro carregando o tipo do auto
+    	addi $a1, $t3, -2		#Pega a pocição do tipo
+    	jal strcmp  			#Compara o caracter de tipo	
+    	move $s6, $v0			#Salva resultado da função em $s6
+    	
+    	addi $a1, $t3, 20		#Pega a pocição da cor
+    	move $a0, $a3			#Parametro carregando a cor do auto
+    	jal strcmp  			#Compara o caracter de cor
+    	move $s5, $v0			#Salva resultado da função em $s5	
+    	
+    	lw   $ra, 0($sp)
+    	lw   $t3, 4($sp)
+    	lw   $t2, 8($sp)	
+    	lw   $t1, 12($sp)
+    	lw   $t0, 16($sp)
+    	addi $sp, $sp, 20
+    	
+    	jr $ra
+    	
+    autoInvalido:
+    	#Retornar mensagem auto especificado n existe
+        jr $ra
+    	
+    removeModelo:
+    	lb   $t4, 0($t6)		#Pega caractere atual em modelo
+    	beq  $t4, 0,  removeTipo	#Checa se a remoção ja foi realizada e encerra a função 
+    	addi $t5, $0, 0			#Instancia o valor 0, a ser substuido a cada caractere em modelo
+    	sb   $t5, 0($t6)		#Substitui o caractere atual em modelo por 0
+    	addi $t6, $t6, 1		#Pula para o próximo caractere
+    	j removeModelo			#Recursao
+    	
+    removeTipo:
+    	move $t6, $t3			#Pega novamente o primeiro byte da posicao de modelo
+    	addi $t6, $t6, -2 		#Passa ponteiro pra posição de tipo
+    removeTipoAux:
+    	lb   $t4, 0($t6)		#Pega caractere atual em tipo
+    	beq  $t4, 0, removeCor		#Checa se a remoção ja foi realizada e encerra a função 
+    	addi $t5, $0, 0			#Instancia o valor 0, a ser substuido a cada caractere em tipo
+    	sb   $t5, 0($t6)		#Substitui o caractere atual em modelo por 0
+    	addi $t6, $t6, 1		#Pula para o próximo caractere
+    	j removeTipoAux			#Recursao
+    	
+    removeCor:
+    	move $t6, $t3			#Pega novamente o primeiro byte da posicao de modelo
+    	addi $t6, $t6, 20		#Passa ponteiro pra posição de tipo
+    removeCorAux:
+    	lb   $t4, 0($t6)		#Pega caractere atual em tipo
+    	beq  $t4, 0, autoRemovido	#Checa se a remoção ja foi realizada e encerra a função 
+    	addi $t5, $0, 0			#Instancia o valor 0, a ser substuido a cada caractere em tipo
+    	sb   $t5, 0($t6)		#Substitui o caractere atual em modelo por 0
+    	addi $t6, $t6, 1		#Pula para o próximo caractere
+    	j removeCorAux			#Recursao
+    
+    autoRemovido:
+    	jr $ra				#Sai da função
 	
 	j fim_leitura					# Pula para função que quebra linha e pula para a main
 	
@@ -507,7 +736,11 @@ cmd_lp_ap:
 	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	addi $a0, $a0, 10				# Soma 10 ao endereço afim de ir para onde começa o numero do AP 
 	
+	jal esvasia_apt
+	j fim_leitura					# Pula para função que quebra linha e pula para a main
+	
 	esvasia_apt:  # recebe em a0 o endereço do apt e em a1 a horigem dos apartamentos
+	move $a1, $s2
   addi $sp, $sp, -4  # armazena o ra para utilização futura
   sw $ra, 0($sp)  # armazena o ra para utilização futura
   
@@ -527,16 +760,72 @@ cmd_lp_ap:
     bne $t1, $t3, removedor  # verifica o fim da remoção
     jr $ra  #  velta para o fim da dunção
 	
-	j fim_leitura					# Pula para função que quebra linha e pula para a main
 	
 # Função de informações de um AP especifico
 cmd_if_ap:
 	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	addi $a0, $a0, 8				# Soma 8 ao endereço afim de ir para onde começa o numero do AP 
 	
-	# Espaço para colocar a função ou um jump para a função, whatever
-	
+	jal info_ap_esp
 	j fim_leitura					# Pula para função que quebra linha e pula para a main
+	
+	info_ap_esp:   # recebe em a1 o numero do ap
+	  
+	 addi $sp, $sp, -4  # armazena o ra para utilização futura
+ 	 sw $ra, 0($sp)  # armazena o ra para utilização futura
+  
+	  jal verifica_andar
+  
+ 	 lw $ra, 0($sp)  # recupera o ra para utilização futura
+  	addi $sp, $sp, 4 # recupera o ra para utilização futura
+	  
+	  
+	move $a1, $s2 # carrega a ponta do arquivo
+	move $s7, $v0 # cabeça da lista do ap
+	
+	la $a1, msg_info_ap0
+        mensagemm:
+        lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
+        andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
+        beq $t1, $zero, mensagemm	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
+	lb $t2, 0($a1)				# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
+	beq $t2, $zero, mensagemm2		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
+	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
+	addi $a1, $a1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
+	j mensagemm				# Jump para continuar o loop
+	
+	move $a1, $s7
+        mensagemm2:
+        lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
+        andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
+        beq $t1, $zero, mensagemm2	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
+	lb $t2, 0($a1)				# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
+	beq $t2, $zero, mensagemm3		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
+	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
+	addi $a1, $a1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
+	j mensagemm2				# Jump para continuar o loop
+	
+	la $a1, msg_info_ap1
+        mensagemm3:
+        lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
+        andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
+        beq $t1, $zero, mensagemm3	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
+	lb $t2, 0($a1)				# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
+	beq $t2, $zero, fim_leitura		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
+	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
+	addi $a1, $a1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
+	j mensagemm3				# Jump para continuar o loop	
+	
+	addi $a1, $t7, 23
+        mensagemm4:
+        lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
+        andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
+        beq $t1, $zero, mensagemm4	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
+	lb $t2, 0($a1)				# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
+	beq $t2, $zero, fim_leitura		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
+	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
+	addi $a1, $a1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
+	j mensagemm4				# Jump para continuar o loop	
 	
 # Função de informações gerais dos APs	
 cmd_if_g:
@@ -763,10 +1052,30 @@ verifica_andar: # Em a0 deve ser disposto o andara ser verificado e em a1 o pont
     
   apt_n_achado: # caso o ap n seja achado retorna -1
     addi $v0, $0, -1   # move para v0 o retorno
+    la $a1, msg_e_n_ap
+    mensagem_de_erro_loop1:
+        lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
+        andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
+        beq $t1, $zero, mensagem_de_erro_loop1	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
+	lb $t2, 0($a1)					# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
+	beq $t2, $zero, fim_leitura		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
+	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
+	addi $a1, $a1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
+	j mensagem_de_erro_loop1					# Jump para continuar o loop
     jr $ra # retorna para a execução do arquivo
     
 ap_n_encontrado:  # devolve 1 em v0 pq o ap não foi encontrado
     addi $v0, $0, 1 # carrega 1 em v0
+    la $a1, msg_e_n_ap
+    mensagem_de_erro_loop2:
+        lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
+        andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
+        beq $t1, $zero, mensagem_de_erro_loop2	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
+	lb $t2, 0($a1)					# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
+	beq $t2, $zero, fim_leitura		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
+	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
+	addi $a1, $a1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
+	j mensagem_de_erro_loop2					# Jump para continuar o loop
     jr $ra # encerra a função
     
 leArquivo:
@@ -796,4 +1105,3 @@ leArquivo:
 
 	jr $ra	
 
-fim:
