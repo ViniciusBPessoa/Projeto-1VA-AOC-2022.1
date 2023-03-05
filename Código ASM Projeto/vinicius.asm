@@ -1,8 +1,9 @@
 .data
   
-  nome: .asciiz "Vinil"  
-  ap: .asciiz "01"
-  ap2: .asciiz "02"
+  
+  func: .asciiz "ad_morador-02-vinicius Bezerra pessoa"
+  nome: .asciiz "Vini" 
+  ap: .asciiz "02"
 
   apt_space: .space 7480  #  declaração de todo o espaço para todos os apartamentos para verificaïção
   localArquivo: .asciiz "C:/aps.txt"
@@ -10,12 +11,19 @@
 .text
 
 main:
-  
-   jal leArquivo
+   
+  jal leArquivo
   addi $s2, $a1, 0
-  la $a0, ap
-  la $a1, nome
-  jal incerirPessoa
+   
+  la $a0, func
+  addi $a0, $a0, 11				# Soma 11 ao endereço afim de ir para onde começa o numero do AP 
+  move $t1, $a0					#  ad_morador-02/0vini
+  addi $t1, $t1, 2
+  move $t2, $0
+  sb $t2, 0($t1)
+  addi $a1, $a0, 3				# Soma mais 2 aos 11 somados afim de ir para onde começa o nome do morador
+
+  jal inserirPessoa
   
 
   
@@ -23,12 +31,13 @@ main:
 
 #########################################################################################################################
 
-incerirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o nome a ser incerrido: em $s2 esta a lista de itens em $s2 estara a posição inicial dos APs
+inserirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o nome a ser incerrido: em $s2 esta a lista de itens em $s2 estara a posição inicial dos APs
 # os possiveis erros estão em $v0 sendo eles 1 ou 2, 1w = apartamento não encontrado
   
   addi $t7 , $s2, 0  # carrega a primeira posição do espaço disponivel para o sistema de apartamneto
   addi $t2, $t7, 7480 # maior valor possivel  a ser escrito no sistema
   addi $t4, $a1, 0  #  salva o que esta em a1, para utilizar em algumas outras funçoes
+  j verificador_andar
   
   verificador_andar: 
     addi $a1, $t7, 0  # carrega a  posição do espaço disponivel em vigor para ser comparada
@@ -341,50 +350,50 @@ fim: # finaliza o codigo
   addi $v0, $0, 10
   syscall
 
-verificador_info_geral:
-  move $t1, $s2
-  addi $t2, $0, 0
-  addi $t3, $0, 0
+verificador_info_geral:  # é responsavel por realizar a contagem das apartamentos com pessoas e sem pessoas
+  move $t1, $s2  #  pega o inicializador, como ele sempre esta em s2   
+  addi $t2, $0, 0   #  inicia os contadores
+  addi $t3, $0, 0  #  inicia os conatdores
   
-  loop_apts:
-    move $a0, $t1
-    addi $t1, $t1, 187
+  #  os contadores estão ($t2 com a contagem dos aps cheios e $t3 com os aps sem pessoas)
+  
+  loop_apts:  # loop principal que passa de ap em ap
+    move $a0, $t1  #  move a ponta do apartamento a ser verificado
+    addi $t1, $t1, 187  # pula para o proximo ap
     
-    addi $sp, $sp, -20
-    sw $t1, 0($sp)
-    sw $t2, 4($sp)
-    sw $t3, 8($sp)
-    sw $ra, 12($sp)
-    sw $t4, 16($sp)
+    addi $sp, $sp, -16  #  libera o espaço na memoria para evitar problemas com conflitos
+    sw $t1, 0($sp)  #  qurda t1 contagem de aps
+    sw $t2, 4($sp)  #  qurda t2 contagem de aps vasios
+    sw $t3, 8($sp)  #  qurda t3 contagem de aps cheios
+    sw $ra, 12($sp)  #  quarda a posição no pc
     
-    jal verifica_ap
+    jal verifica_ap  # verifica se o ap esta cheio
     
-    lw $t4, 16($sp)
-    lw $ra, 12($sp)
-    lw $t3, 8($sp)
-    lw $t2, 4($sp)
-    lw $t1, 0($sp)
-    addi $sp, $sp, 20
+    lw $ra, 12($sp)  #  recupera a posição no pc
+    lw $t3, 8($sp)  #  recupera t3 contagem de aps cheios
+    lw $t2, 4($sp)  #  recupera t2 contagem de aps vasios
+    lw $t1, 0($sp)  #  recupera t1 contagem de aps
+    addi $sp, $sp, 16  #  libera o espaço na memoria para evitar problemas com conflitos
     
     
     
-    beq $v0, 2, apt_va
-    beq $v0, 1, apt_ch
+    beq $v0, 2, apt_va  #  verifica se o apt esta cheio ou não
+    beq $v0, 1, apt_ch  #  verifica se o apt esta cheio ou não
     
-    verificador_fim_aps:
-      add $t4, $t2, $t3
-      beq $t4, 40, apts_verificados
-      j loop_apts
+    verificador_fim_aps: # verifica se a contagem chegou ao fim
+      add $t4, $t2, $t3  #  soma os contadores para fer se juntos chegam a 40
+      beq $t4, 40, apts_verificados  # verifica a contagem
+      j loop_apts  # caso não estejam retorna ao loop
 
-    apt_ch:
-      addi $t2, $t2, 1
-      j verificador_fim_aps
+    apt_ch:  # caso esteja cheio soma 1 em  t2
+      addi $t2, $t2, 1  # caso esteja cheio soma 1 em  t2
+      j verificador_fim_aps #  varifica se acabarao os aps
       
-    apt_va:
-      addi $t3, $t3, 1
-      j verificador_fim_aps
+    apt_va:  # caso não esteja cheio soma 1 em  t3
+      addi $t3, $t3, 1  # caso não esteja cheio soma 1 em  t3
+      j verificador_fim_aps #  varifica se acabarao os aps
       
-    apts_verificados:
-      move $v0, $t2
-      move $v1, $t3
-      jr $ra
+    apts_verificados:  # verifica se todos os apartamentos estão  verificados
+      move $v0, $t2  #  caso sim coloca em v0 os aps cheios 
+      move $v1, $t3  #  caso sim coloca em v1 os não cheios
+      jr $ra  # retorna a antes da função

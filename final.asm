@@ -24,6 +24,7 @@
 	apt_space: .space 7480  				#  espaços dedicados para os apartamentos
  	localArquivo: .asciiz "C:/aps.txt"  			# local no computador onde o arquivo original se mantem
 
+
 .text
 main:
 
@@ -182,21 +183,35 @@ verifica_cmds:
 	
 # Função de adicionar morador	
 cmd_ad_m:
-	j cmd_valido
 	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	addi $a0, $a0, 11				# Soma 11 ao endereço afim de ir para onde começa o numero do AP 
-	move $t1, $a0
+	move $t1, $a0					#  ad_morador-02/0vini
 	addi $t1, $t1, 2
 	move $t2, $0
 	sb $t2, 0($t1)
 	addi $a1, $a0, 3				# Soma mais 2 aos 11 somados afim de ir para onde começa o nome do morador
 	
-	incerirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o nome a ser incerrido: em $s2 esta a lista de itens em $s2 estara a posição inicial dos APs
+	
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	move $s5, $a0
+	move $s6, $a1
+	lb $s7, 0($a0)
+	sb $s7, 29($s2)
+	
+	jal inserirPessoa
+        lw $ra, 0($sp)
+        addi $sp, $sp, 4
+        j fim_leitura					# Pula para função que quebra linha e pula para a main
+        		
+inserirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o nome a ser incerrido: em $s2 esta a lista de itens em $s2 estara a posição inicial dos APs
 # os possiveis erros estão em $v0 sendo eles 1 ou 2, 1w = apartamento não encontrado
   
   addi $t7 , $s2, 0  # carrega a primeira posição do espaço disponivel para o sistema de apartamneto
   addi $t2, $t7, 7480 # maior valor possivel  a ser escrito no sistema
   addi $t4, $a1, 0  #  salva o que esta em a1, para utilizar em algumas outras funçoes
+  j verificador_andar
   
   verificador_andar: 
     addi $a1, $t7, 0  # carrega a  posição do espaço disponivel em vigor para ser comparada
@@ -238,8 +253,7 @@ cmd_ad_m:
     apt_cheio: # caso o apartamento esteja cheio retor na o erro 2
       addi $v0, $0, 2 # carrega 2 no retorno 
       jr $ra # acaba a função
-	
-	j fim_leitura					# Pula para função que quebra linha e pula para a main
+
 	
 # Função de remover morador	
 cmd_rm_m:
@@ -391,7 +405,60 @@ cmd_if_ap:
 # Função de informações gerais dos APs	
 cmd_if_g:
 	
-	# Espaço para colocar a função ou um jump para a função, whatever
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	jal verificador_info_geral
+        lw $ra, 0($sp)
+        addi $sp, $sp, 4
+        j fim_leitura					# Pula para função que quebra linha e pula para a main
+        
+verificador_info_geral:  # é responsavel por realizar a contagem das apartamentos com pessoas e sem pessoas
+  move $t1, $s2  #  pega o inicializador, como ele sempre esta em s2   
+  addi $t2, $0, 0   #  inicia os contadores
+  addi $t3, $0, 0  #  inicia os conatdores
+  
+  #  os contadores estão ($t2 com a contagem dos aps cheios e $t3 com os aps sem pessoas)
+  
+  loop_apts:  # loop principal que passa de ap em ap
+    move $a0, $t1  #  move a ponta do apartamento a ser verificado
+    addi $t1, $t1, 187  # pula para o proximo ap
+    
+    addi $sp, $sp, -16  #  libera o espaço na memoria para evitar problemas com conflitos
+    sw $t1, 0($sp)  #  qurda t1 contagem de aps
+    sw $t2, 4($sp)  #  qurda t2 contagem de aps vasios
+    sw $t3, 8($sp)  #  qurda t3 contagem de aps cheios
+    sw $ra, 12($sp)  #  quarda a posição no pc
+    
+    jal verifica_ap  # verifica se o ap esta cheio
+    
+    lw $ra, 12($sp)  #  recupera a posição no pc
+    lw $t3, 8($sp)  #  recupera t3 contagem de aps cheios
+    lw $t2, 4($sp)  #  recupera t2 contagem de aps vasios
+    lw $t1, 0($sp)  #  recupera t1 contagem de aps
+    addi $sp, $sp, 16  #  libera o espaço na memoria para evitar problemas com conflitos
+    
+    
+    
+    beq $v0, 2, apt_va  #  verifica se o apt esta cheio ou não
+    beq $v0, 1, apt_ch  #  verifica se o apt esta cheio ou não
+    
+    verificador_fim_aps: # verifica se a contagem chegou ao fim
+      add $t4, $t2, $t3  #  soma os contadores para fer se juntos chegam a 40
+      beq $t4, 40, apts_verificados  # verifica a contagem
+      j loop_apts  # caso não estejam retorna ao loop
+
+    apt_ch:  # caso esteja cheio soma 1 em  t2
+      addi $t2, $t2, 1  # caso esteja cheio soma 1 em  t2
+      j verificador_fim_aps #  varifica se acabarao os aps
+      
+    apt_va:  # caso não esteja cheio soma 1 em  t3
+      addi $t3, $t3, 1  # caso não esteja cheio soma 1 em  t3
+      j verificador_fim_aps #  varifica se acabarao os aps
+      
+    apts_verificados:  # verifica se todos os apartamentos estão  verificados
+      move $v0, $t2  #  caso sim coloca em v0 os aps cheios 
+      move $v1, $t3  #  caso sim coloca em v1 os não cheios
+      jr $ra  # retorna a antes da função
 	
 	j fim_leitura					# Pula para função que quebra linha e pula para a main
 	
@@ -417,15 +484,6 @@ cmd_f:
 	j fim_leitura					# Pula para função que quebra linha e pula para a main
 	
 # Função que escreve "Comando Inválido" no display MMIO
-cmd_invalido:
-	lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
-    andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
-    beq $t1, $zero, cmd_invalido	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
-	lb $t2, 0($s1)					# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
-	beq $t2, $zero, fim_leitura		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
-	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
-	addi $s1, $s1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
-	j cmd_invalido					# Jump para continuar o loop
 	
 cmd_valido:
 	lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
@@ -436,6 +494,16 @@ cmd_valido:
 	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
 	addi $s0, $s0, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
 	j cmd_valido					# Jump para continuar o loop
+
+cmd_invalido:
+	lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
+    andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
+    beq $t1, $zero, cmd_invalido	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
+	lb $t2, 0($s1)					# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
+	beq $t2, $zero, fim_leitura		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
+	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
+	addi $s1, $s1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
+	j cmd_invalido					# Jump para continuar o loop
 
 # Função auxiliar ao fim de leitura de um comando
 fim_leitura:
@@ -591,3 +659,5 @@ leArquivo:
 	syscall 			#executa função
 
 	jr $ra	
+
+fim:
