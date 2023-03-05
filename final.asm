@@ -39,9 +39,7 @@ main:
 	
 # Função que compara strings para ver se são iguais
 compara_str:
-	move $t2, $a2					# Movendo o valor do reg $a2 (range) para o reg $t2
-	move $t3, $a3					# Movendo o valor do reg $a3 (contador) para o reg $t3
-	beq $t2, $t3, str_igual			# Caso o contador chegue no range sem que algum caractere seja diferente, as strings são consideradas iguais
+	beq $a2, $a3, str_igual			# Caso o contador chegue no range sem que algum caractere seja diferente, as strings são consideradas iguais
 	lb $t0, 0($a0)					# Lê o byte da string 1
 	lb $t1, 0($a1)					# Lê o byte da string 2
 	bne $t0, $t1, str_diferente		# Caso sejam diferentes, pula pra função que lida com isso
