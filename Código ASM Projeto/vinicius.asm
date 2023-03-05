@@ -1,9 +1,10 @@
 .data
   
   nome: .asciiz "Vinil"  
-  ap: .asciiz "02"
+  ap: .asciiz "01"
+  ap2: .asciiz "02"
 
-  apt_space: .space 7480  #  espaï¿½os para verificaï¿½ï¿½o
+  apt_space: .space 7480  #  declaração de todo o espaço para todos os apartamentos para verificaïção
   localArquivo: .asciiz "C:/aps.txt"
 
 .text
@@ -15,10 +16,7 @@ main:
   la $a0, ap
   la $a1, nome
   jal incerirPessoa
-
-   la $a0, ap
-   la $a1, nome
-   jal remover_pessoa
+  
 
   
   j fim
@@ -345,11 +343,48 @@ fim: # finaliza o codigo
 
 verificador_info_geral:
   move $t1, $s2
+  addi $t2, $0, 0
+  addi $t3, $0, 0
   
-  loop:
+  loop_apts:
     move $a0, $t1
+    addi $t1, $t1, 187
     
-    addi 
+    addi $sp, $sp, -20
+    sw $t1, 0($sp)
+    sw $t2, 4($sp)
+    sw $t3, 8($sp)
+    sw $ra, 12($sp)
+    sw $t4, 16($sp)
     
     jal verifica_ap
     
+    lw $t4, 16($sp)
+    lw $ra, 12($sp)
+    lw $t3, 8($sp)
+    lw $t2, 4($sp)
+    lw $t1, 0($sp)
+    addi $sp, $sp, 20
+    
+    
+    
+    beq $v0, 2, apt_va
+    beq $v0, 1, apt_ch
+    
+    verificador_fim_aps:
+      add $t4, $t2, $t3
+      beq $t4, 40, apts_verificados
+      j loop_apts
+
+    apt_ch:
+      addi $t2, $t2, 1
+      j verificador_fim_aps
+      
+    apt_va:
+      addi $t3, $t3, 1
+      j verificador_fim_aps
+      
+    apts_verificados:
+      move $v0, $t2
+      move $v1, $t3
+      jr $ra
