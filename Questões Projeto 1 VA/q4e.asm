@@ -1,3 +1,7 @@
+# Projeto 1 VA Arquitetura e Organização de Computadores - 2022.1
+# Alunos: Vinícius Bezerra, Irlan Farias, Apolo Albuquerque
+# Descrição do arquivo: Código .asm da questão 4 letra e
+
 # Os tamanos do .spaces usados aqui foram arbitrários, podem ser mudados para testes
 # Os .asciiz foram usados aqui apenas para testes, também podem ser alterados
 .data

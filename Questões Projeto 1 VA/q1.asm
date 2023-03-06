@@ -1,3 +1,6 @@
+# Projeto 1 VA Arquitetura e Organização de Computadores - 2022.1
+# Alunos: Vinícius Bezerra, Irlan Farias, Apolo Albuquerque
+# Descrição do arquivo: Código .asm da questão 1
 # Substituir caracteres em uma string em MIPS Assembly
 
 .data

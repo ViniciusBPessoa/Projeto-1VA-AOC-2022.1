@@ -1,3 +1,7 @@
+# Projeto 1 VA Arquitetura e Organização de Computadores - 2022.1
+# Alunos: Vinícius Bezerra, Irlan Farias, Apolo Albuquerque
+# Descrição do arquivo: Código .asm do projeto com a utilização do MMIO
+
 .eqv rcvr_ctrl 0xffff0000
 .eqv rcvr_data 0xffff0004
 .eqv trsmttr_ctrl 0xffff0008
@@ -7,8 +11,6 @@
 	str_padrao: .asciiz "VIA-shell>> "	# String padrão a ser exibida no MMIO
 	barra_n: .byte 10					# Valor equivalente na tabela ASCII da quebra de linha (\n)
 	terminal_cmd: .space 100			# Espaço/Variável para armazenar o que é digitado pelo usuário no MMIO
-	
-	
 	
 	str_cmd_ad_m: .asciiz "ad_morador-"		# String de comando para adicionar morador
 	str_cmd_rm_m: .asciiz "rm_morador-"		# String de comando para remover morador
@@ -20,6 +22,7 @@
 	str_cmd_s: .asciiz "salvar"				# String de comando para salvar as infos num arquivo
 	str_cmd_r: .asciiz "recarregar"			# String de comando para recarregar as infos do arquivo
 	str_cmd_f: .asciiz "formatar"			# String de comando para formatar o arquivo
+	
 	msg_c_v: .asciiz "Comando Valido"		# String usada apenas para testes de comandos válidos digitados no MMIO
 	msg_c_i: .asciiz "Comando Invalido"		# String usada apenas para testes de comandos inválidos digitados no MMIO
 	msg_e_n_m_m:  .asciiz "Falha: AP com numero max de moradores"
@@ -29,18 +32,15 @@
 	msg_info_ap1: .asciiz "Moradores:"
 	
 	apt_space: .space 7480  				#  espaços dedicados para os apartamentos
- 	localArquivo: .asciiz "C:/aps.txt"  			# local no computador onde o arquivo original se mantem
-
+ 	localArquivo: .asciiz "C:/aps.txt"  	# local no computador onde o arquivo original se mantem
 
 .text
-
 awake:
-         jal leArquivo                              # pula ate a função qeu ira ler o aquivo
-        addi $s2, $a1, 0                        # salva o space em s2
-        j main
+    jal leArquivo                           # pula ate a função qeu ira ler o aquivo
+    addi $s2, $a1, 0                        # salva o space em s2
+    j main
+    
 main:
-
-        
 	la $s0, msg_c_v					# Lê o endereço da string teste de comando válido
 	la $s1, msg_c_i					# Lê o endereço da string teste de comando inválido
 	la $a1, str_padrao				# Lê o endereço da string padrão a ser exibida no MMIO
@@ -170,7 +170,7 @@ verifica_cmds:
 	
 	la $a0, str_cmd_s				# Lê o endereço da string de comando para salvar as infos num arquivo
 	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
-	addi $a2, $0, 6				# Adiciona a quantidade de caracteres necessárias para a comparação
+	addi $a2, $0, 6					# Adiciona a quantidade de caracteres necessárias para a comparação
 	move $a3, $0					# Instanciona um contador para compara_str			
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_s				# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de salvar as infos num arquivo, dai pula para função responsável
@@ -184,7 +184,7 @@ verifica_cmds:
 	
 	la $a0, str_cmd_f				# Lê o endereço da string de comando para formatar o arquivo
 	la $a1, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
-	addi $a2, $0, 8				# Adiciona a quantidade de caracteres necessárias para a comparação
+	addi $a2, $0, 8					# Adiciona a quantidade de caracteres necessárias para a comparação
 	move $a3, $0					# Instanciona um contador para compara_str			
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_f				# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de formatar o arquivo, dai pula para função responsável
@@ -195,21 +195,20 @@ verifica_cmds:
 cmd_ad_m:
 	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	addi $a0, $a0, 11				# Soma 11 ao endereço afim de ir para onde começa o numero do AP 
-        move $t1, $a0					#  ad_morador-02/0vini
-        addi $t1, $t1, 2
-        move $t2, $0
-        sb $t2, 0($t1)
-        addi $a1, $a0, 3				# Soma mais 2 aos 11 somados afim de ir para onde começa o nome do morador
-	
+    move $t1, $a0					#  ad_morador-02/0vini
+    addi $t1, $t1, 2
+    move $t2, $0
+    sb $t2, 0($t1)
+    addi $a1, $a0, 3				# Soma mais 2 aos 11 somados afim de ir para onde começa o nome do morador
 	
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
 	jal inserirPessoa
 	
-        lw $ra, 0($sp)
-        addi $sp, $sp, 4
-        j fim_leitura					# Pula para função que quebra linha e pula para a main
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	j fim_leitura					# Pula para função que quebra linha e pula para a main
         		
 inserirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o nome a ser incerrido: em $s2 esta a lista de itens em $s2 estara a posição inicial dos APs
 # os possiveis erros estão em $v0 sendo eles 1 ou 2, 1w = apartamento não encontrado
@@ -238,7 +237,7 @@ inserirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o
   move $t7, $v0
   j ap_insere
   
-  ap_insere:  # se chegarmos aqui é porque o apartamento foi encontrado, agora vamos verificar se o ap pode receber mais uma pessoa
+  	ap_insere:  # se chegarmos aqui é porque o apartamento foi encontrado, agora vamos verificar se o ap pode receber mais uma pessoa
     
     addi $t7, $t7, 3 # tendo recebi o apartamento vamos vasculhar jogando para a 1 posição das pessoas
     addi $t5, $0, 0 # inicia meu contador de pessoas caso seja 5 o a paratamento está cheio
@@ -253,36 +252,34 @@ inserirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o
       beq $t5, 5, apt_cheio  # caso todos os possiveis locais para incerir pessoas foram preenchidos
       j vaga  # retorna ao loop
 
-  vaga_disponivel:  # se chegarmos aqui é por que o nome pode ser incerido
+  	vaga_disponivel:  # se chegarmos aqui é por que o nome pode ser incerido
+    	addi $a0, $t7, 0 # carrega em a0 o que devemos incerir no local do nome
+    	addi $a1, $t4, 0 # carrega o espaço a ser incerido
+    	addi $t9, $ra, 0 # salva a posição original do arquivo
     
-    addi $a0, $t7, 0 # carrega em a0 o que devemos incerir no local do nome
-    addi $a1, $t4, 0 # carrega o espaço a ser incerido
-    addi $t9, $ra, 0 # salva a posição original do arquivo
-    
-    addi $sp, $sp, -4
-    sw $ra, 0($sp)
+    	addi $sp, $sp, -4
+    	sw $ra, 0($sp)
             
-    jal strcpy  # copia a string no novo local controlando o numero de caracteres par aque o mesmo não utrapasse 19
+    	jal strcpy  # copia a string no novo local controlando o numero de caracteres par aque o mesmo não utrapasse 19
     
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
-    jr $ra # ja que a função foi bem sucedida retorna ao inicio
+    	lw $ra, 0($sp)
+    	addi $sp, $sp, 4
+    	jr $ra # ja que a função foi bem sucedida retorna ao inicio
     
     apt_cheio: # caso o apartamento esteja cheio retor na o erro 2
-      addi $v0, $0, 2 # carrega 2 no retorno 
-      la $a1, msg_e_n_m_m
-      mensagem_de_erro_loop:
+      	addi $v0, $0, 2 # carrega 2 no retorno 
+      	la $a1, msg_e_n_m_m
+      	
+    mensagem_de_erro_loop:
         lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
         andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
         beq $t1, $zero, mensagem_de_erro_loop	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
-	lb $t2, 0($a1)					# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
-	beq $t2, $zero, fim_leitura		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
-	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
-	addi $a1, $a1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
-	j mensagem_de_erro_loop					# Jump para continuar o loop
-      jr $ra # acaba a função
-
-
+        
+		lb $t2, 0($a1)					# Carrega um byte da string para ser impresso no MMIO					
+		beq $t2, $zero, fim_leitura		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
+		sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
+		addi $a1, $a1, 1				# Soma 1 ao endereço da string afim de ir para o proximo byte
+		j mensagem_de_erro_loop			# Jump para continuar o loop
 	
 # Função de remover morador	
 cmd_rm_m:
@@ -536,7 +533,7 @@ inserirAuto: #$a0 AP - $a1 TIPO AUTO (C OU M) - $a2 MODELO - $a3 COR
     	    
 #######################################################################################################################
 	
-# Função de remover automóvel (falta confirmar com o professor se vai funcionar assim mesmo)	
+# Função de remover automóvel
 cmd_rm_a:
 	la $a0, terminal_cmd				# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	
@@ -829,13 +826,12 @@ cmd_if_ap:
 	
 # Função de informações gerais dos APs	
 cmd_if_g:
-	
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	jal verificador_info_geral
-        lw $ra, 0($sp)
-        addi $sp, $sp, 4
-        j fim_leitura					# Pula para função que quebra linha e pula para a main
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    j fim_leitura					# Pula para função que quebra linha e pula para a main
         
 verificador_info_geral:  # é responsavel por realizar a contagem das apartamentos com pessoas e sem pessoas
   move $t1, $s2  #  pega o inicializador, como ele sempre esta em s2   
@@ -862,8 +858,6 @@ verificador_info_geral:  # é responsavel por realizar a contagem das apartamento
     lw $t1, 0($sp)  #  recupera t1 contagem de aps
     addi $sp, $sp, 16  #  libera o espaço na memoria para evitar problemas com conflitos
     
-    
-    
     beq $v0, 2, apt_va  #  verifica se o apt esta cheio ou não
     beq $v0, 1, apt_ch  #  verifica se o apt esta cheio ou não
     
@@ -884,8 +878,6 @@ verificador_info_geral:  # é responsavel por realizar a contagem das apartamento
       move $v0, $t2  #  caso sim coloca em v0 os aps cheios 
       move $v1, $t3  #  caso sim coloca em v1 os não cheios
       jr $ra  # retorna a antes da função
-	
-	j fim_leitura					# Pula para função que quebra linha e pula para a main
 	
 # Função de salvar no arquivo
 cmd_s:

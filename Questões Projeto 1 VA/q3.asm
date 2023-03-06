@@ -1,3 +1,7 @@
+# Projeto 1 VA Arquitetura e Organização de Computadores - 2022.1
+# Alunos: Vinícius Bezerra, Irlan Farias, Apolo Albuquerque
+# Descrição do arquivo: Código .asm da questão 3
+
 .data
     texto: .asciiz "O fibonacci do seu número é de: "
 .text

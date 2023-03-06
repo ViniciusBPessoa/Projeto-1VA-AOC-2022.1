@@ -1,3 +1,7 @@
+# Projeto 1 VA Arquitetura e Organização de Computadores - 2022.1
+# Alunos: Vinícius Bezerra, Irlan Farias, Apolo Albuquerque
+# Descrição do arquivo: Código .asm da questão 4 letra c
+
 .data
 
   mensagem1: .asciiz "a vida é foda irmao" # Carrega a 1º messagem a ser comparada

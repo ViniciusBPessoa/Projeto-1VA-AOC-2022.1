@@ -1,3 +1,7 @@
+# Projeto 1 VA Arquitetura e Organização de Computadores - 2022.1
+# Alunos: Vinícius Bezerra, Irlan Farias, Apolo Albuquerque
+# Descrição do arquivo: Código .asm da questão 4 letra b
+
 .data
 # Os tipos de dados abaixo foram usados apenas como teste.
 # É sabido que os endereços de source e destination podem se interseccionar em determinado ponto ou até mesmo serem os mesmos.

@@ -1,3 +1,7 @@
+# Projeto 1 VA Arquitetura e Organização de Computadores - 2022.1
+# Alunos: Vinícius Bezerra, Irlan Farias, Apolo Albuquerque
+# Descrição do arquivo: Código .asm da questão 2
+
 .data
 	string: .space 100 		# Constante para armazenar a string inserida pelo usuário
 	quebra_linha: .ascii "\n" 	# Constante que representa o valor de quebra de linha (caso o usuário dê enter)
