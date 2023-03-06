@@ -22,8 +22,9 @@
 	msg_c_v: .asciiz "Comando Valido\n"		# String usada apenas para testes de comandos válidos digitados no MMIO
 	msg_c_i: .asciiz "Comando Invalido\n"		# String usada apenas para testes de comandos inválidos digitados no MMIO
 	msg_e_n_m_m:  .asciiz "Falha: AP com numero max de moradores"
-	msg_e_n_ap: .asciiz "Falha: AP invalido"
+	msg_e_n_ap: .asciiz "Falha: AP invalido\n"
 	
+	quebra_linha: .asciiz "\n"
 	msg_info_ap0: .asciiz "AP: "
 	msg_info_ap1: .asciiz "Moradores:"
 	
@@ -66,6 +67,18 @@ compara_str:  # recebe em a1 a str do comando a ser verificada
 		
 separador_comando:#  pega a string que foi digitada pelo ususario
 	la $a0, terminal_cmd  #  pega a string que foi digitada pelo ususario e carrega em a0
+	move $t2, $a0
+	
+	loop_verificador_n:
+	
+		lb $t3, 0($t2)
+		beq $t3, 0, removedor_n
+		addi $t2, $t2, 1
+		j loop_verificador_n
+		
+	removedor_n:
+		addi $t2, $t2, -1
+		sb $0, 0($t2)
 	
 	loop_comparador_com:  # loop para isolar o comando dos itens a serem removidos ou inceridos 
 	
@@ -80,7 +93,6 @@ separador_comando:#  pega a string que foi digitada pelo ususario
 		j verifica_cmds1
 	cmd_n_enc:
 		j verifica_cmds2
-	
 
 # Função que verifica se o comando digitado é válido    
 verifica_cmds1:
@@ -166,8 +178,6 @@ cmd_ad_m:
 inserirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o nome a ser incerrido: em $s2 esta a lista de itens em $s2 estara a posição inicial dos APs
 # os possiveis erros estão em $v0 sendo eles 1 ou 2, 1w = apartamento não encontrado
   
-  sb $0, 0($s2)
-  
   addi $t7 , $s2, 0  # carrega a primeira posição do espaço disponivel para o sistema de apartamneto
   addi $t2, $t7, 7480 # maior valor possivel  a ser escrito no sistema
   addi $t4, $a1, 0  #  salva o que esta em a1, para utilizar em algumas outras funçoes
@@ -186,7 +196,7 @@ inserirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o
   lw $t7, 0($sp)
   addi $sp, $sp, -16 
   
-  beq $v0, -1, ap_n_encontrado
+  beq $v0, -1, main
   move $t7, $v0
   j ap_insere
   
@@ -334,7 +344,7 @@ cmd_rm_m:
     lw $t9, 0($sp)
     addi $sp, $sp, 8
     
-    beq $v0, 2, esvasia_apt  # caso o ap esteja vasio, limpar ele inteiro
+    beq $v0, 2, esvasia_apt_rm  # caso o ap esteja vasio, limpar ele inteiro
     jr $ra # encerra a função
 	
 	j fim_leitura					# Pula para função que quebra linha e pula para a main
@@ -725,58 +735,61 @@ cmd_if_ap:
  	 sw $ra, 0($sp)  # armazena o ra para utilização futura
   
 	  jal verifica_andar
+	  
+	 beq $v0, -1, main
   
  	 lw $ra, 0($sp)  # recupera o ra para utilização futura
   	addi $sp, $sp, 4 # recupera o ra para utilização futura
+  	
+  	
+  	move $t1, $v0
 	  
 	  
-	move $a1, $s2 # carrega a ponta do arquivo
-	move $s7, $v0 # cabeça da lista do ap
-	
-	la $a1, msg_info_ap0
-        mensagemm:
-        lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
-        andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
-        beq $t1, $zero, mensagemm	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
-	lb $t2, 0($a1)				# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
-	beq $t2, $zero, mensagemm2		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
-	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
-	addi $a1, $a1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
-	j mensagemm2				# Jump para continuar o loop
-	
-	move $a1, $s7
-        mensagemm2:
-        lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
-        andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
-        beq $t1, $zero, mensagemm2	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
-	lb $t2, 0($a1)				# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
-	beq $t2, $zero, mensagemm3		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
-	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
-	addi $a1, $a1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
-	j mensagemm2				# Jump para continuar o loop
-	
-	la $a1, msg_info_ap1
-        mensagemm3:
-        lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
-        andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
-        beq $t1, $zero, mensagemm3	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
-	lb $t2, 0($a1)				# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
-	beq $t2, $zero, fim_leitura		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
-	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
-	addi $a1, $a1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
-	j mensagemm3				# Jump para continuar o loop	
-	
-	addi $a1, $t7, 23
-        mensagemm4:
-        lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
-        andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
-        beq $t1, $zero, mensagemm4	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
-	lb $t2, 0($a1)				# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
-	beq $t2, $zero, fim_leitura		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
-	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
-	addi $a1, $a1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
-	j mensagemm4				# Jump para continuar o loop	
-	
+	 li $v0, 4
+   	 la $a0, msg_info_ap0
+   	 syscall
+   	 
+   	 li $v0, 4
+   	 move $a0, $t1
+   	 syscall
+   	 
+   	 li $v0, 4
+   	 la $a0, quebra_linha
+   	 syscall
+   	 
+   	  li $v0, 4
+   	 la $a0, msg_info_ap1
+   	 syscall
+   	 
+   	 li $v0, 4
+   	 la $a0, quebra_linha
+   	 syscall
+   	 
+   	 addi $t1, $t1, 3
+   	 addi $t2, $0, 0
+   	 
+   	 loop_info_aps_moradores:
+   	 
+   	 	lb $t3, 0($t1)
+   	 	bne $t3, 0, imprime_mora
+   	 	
+   	 
+   	 fim_loop_aps:
+   	 	addi $t2, $t2, 1
+   	 	addi $t1, $t1, 20
+   	 	beq $t2, 4, main
+   	 	j loop_info_aps_moradores
+   	 	
+   	 imprime_mora:
+   	 		li $v0, 4
+   	 		move $a0, $t1
+   			syscall
+   			li $v0, 4
+   			la $a0, quebra_linha
+   	 		syscall
+   			j fim_loop_aps
+   	
+    j main
 # Função de informações gerais dos APs	
 cmd_if_g:
 	
@@ -984,25 +997,18 @@ verifica_andar: # Em a0 deve ser disposto o andara ser verificado e em a1 o pont
     beq $v0, 0, ap_enc  # confere se as strings são iguais  se sim envia para a inserção
 
     addi $t6, $t6, 187 # pula para o numero do proximo apartamento
-    beq $t6, $t7, apt_n_achado  # verifica se a contagem ja cobriu todos os apartamentos
+    beq $t6, $t7, ap_n_encontrado  # verifica se a contagem ja cobriu todos os apartamentos
     j verificador_andara  # retorna ao inicio do loop
     
   ap_enc:  # retorna a posição que dio andar
     move $v0, $t6  #  move para v0 o retorno
     jr $ra  # retorna para a execução do arquivo
     
-  apt_n_achado: # caso o ap n seja achado retorna -1
-    li $v0, 4          				# carrega o código do serviço de impressão de string
-    la $a0, msg_e_n_ap       		# carrega o endereço da mensagem
-    syscall       				# chama o serviço de impressão de string
-    addi $v0, $0, -1   # move para v0 o retorno
-    jr $ra # encerra a função
-    
 ap_n_encontrado:  # devolve 1 em v0 pq o ap não foi encontrado
     li $v0, 4          				# carrega o código do serviço de impressão de string
     la $a0, msg_e_n_ap       		# carrega o endereço da mensagem
     syscall       				# chama o serviço de impressão de string
-    addi $v0, $0, 1 # carrega 1 em v0
+    addi $v0, $0, -1 # carrega 1 em v0
     jr $ra # encerra a função
     
 leArquivo:
@@ -1032,3 +1038,27 @@ leArquivo:
 
 	jr $ra	
 
+
+esvasia_apt_rm:  # recebe em a0 o endereço do apt e em a1 a horigem dos apartamentos
+
+	la $a0, terminal_cmd
+	addi $a0, $a0, 11
+	move $a1, $s2
+  addi $sp, $sp, -4  # armazena o ra para utilização futura
+  sw $ra, 0($sp)  # armazena o ra para utilização futura
+  
+  jal verifica_andar
+  
+  lw $ra, 0($sp)  # recupera o ra para utilização futura
+  addi $sp, $sp, 4 # recupera o ra para utilização futura
+  
+  beq $v0, -1, ap_n_encontrado  # verifica se o apartamento não foi encontrado
+  addi $t3, $v0, 187  #  gera o fim da lisat do aparatamento
+  addi $t1, $v0, 3  # vai ate o inicio do arrey a ser testado
+  addi $t2, $0, 0  # inicia o contrador de caracteres
+  
+  removedor_rm: # remove todo o apartamento em si
+    sb $t2, 0($t1)  # salva /0 na memoria
+    addi $t1, $t1, 1 # adiciona 1 ao contador
+    bne $t1, $t3, removedor_rm  # verifica o fim da remoção
+    jr $ra  #  velta para o fim da dunção
