@@ -1,3 +1,7 @@
+# Projeto 1 VA Arquitetura e Organização de Computadores - 2022.1
+# Alunos: Vinícius Bezerra, Irlan Farias, Apolo Albuquerque
+# Descrição do arquivo: Código referente ao  Projeto (60% da nota) 
+
 .data
 	str_padrao: .asciiz "VIA-shell>> "	# String padrão a ser exibida no MMIO
 	terminal_cmd: .space 100			# carrega a msg que sera escrita pelo usuario
@@ -7,7 +11,7 @@
 	str_cmd_ad_m: .asciiz "ad_morador"		# String de comando para adicionar morador
 	str_cmd_rm_m: .asciiz "rm_morador"		# String de comando para remover morador
 	str_cmd_ad_a: .asciiz "ad_auto"			# String de comando para adicionar automovel
-	str_cmd_rm_a: .asciiz "rm_auto"		# String de comando para remover automovel
+	str_cmd_rm_a: .asciiz "rm_auto"			# String de comando para remover automovel
 	str_cmd_lp_ap: .asciiz "limpar_ap"		# String de comando para limpar apartamento
 	str_cmd_if_ap: .asciiz "info_ap"			# String de comando para informações de AP especifico
 	str_cmd_if_g: .asciiz "info_geral"			# String de comando para informações dos APs em geral
@@ -17,23 +21,27 @@
 	msg_c_v: .asciiz "Comando Valido\n"		# String usada apenas para testes de comandos válidos digitados no MMIO
 	msg_c_i: .asciiz "Comando Invalido\n"		# String usada apenas para testes de comandos inválidos digitados no MMIO
 	
-	msg_e_n_m_m:  .asciiz "Falha: AP com numero max de moradores\n"
-	msg_e_n_ap: .asciiz "Falha: AP invalido\n"
-	msg_e_n_p_e: .asciiz "Falha: morador nao encontrado\n"
-	msg_e_ap_s_n: .asciiz "Apartamento vazio\n"
+	msg_e_n_m_m:  .asciiz "Falha: AP com numero max de moradores\n"  	# carrega a string para a falha de maximo de jogadores
+	msg_e_n_ap: .asciiz "Falha: AP invalido\n"  						# carrega a string para a falha de ap invalido
+	msg_e_n_p_e: .asciiz "Falha: morador nao encontrado\n"  			# carrega a string para a falha de morador não encontrado
+	msg_e_ap_s_n: .asciiz "Apartamento vazio\n"  					# carrega a string para a falha de ´aprtamento vazio
 	
-	quebra_linha: .asciiz "\n"
-	msg_info_ap_spa: .asciiz "	"
-	msg_info_ap0: .asciiz "AP: "
+	quebra_linha: .asciiz "\n"  									# carrega o \n para pular linha
+	msg_info_ap_spa: .asciiz "	"  								# carrega um espaço 
+	
+########################################################################################################################
+	# carregam-se todas as palavras auxiliares para prints
+	
+	msg_info_ap0: .asciiz "AP: "  
 	msg_info_ap1: .asciiz "Moradores:"
 	msg_info_ap2: .asciiz "Carro:"
 	msg_info_ap3: .asciiz "Moto:"
 	msg_info_ap4: .asciiz "Modelo: "
 	msg_info_ap5: .asciiz "Cor: "
-	
+
 	msg_info_g1: .asciiz "Não vazios: "
 	msg_info_g2: .asciiz "Vazios:  "
-	
+########################################################################################################################
 	apt_space: .space 7480  				#  espaços dedicados para os apartamentos
  	localArquivo: .asciiz "C:/aps.txt"  			# local no computador onde o arquivo original se mantem
 
@@ -61,38 +69,40 @@ main:
 
 
 # Função que compara strings para ver se são iguais
-compara_str:  # recebe em a1 a str do comando a ser verificada
-	la $a0, terminal_cmd
-	addi $sp, $sp, -4
-	sw $ra, 0($sp)
-	jal strcmp
-	lw $ra, 0($sp)
-	addi $sp, $sp, 4
+compara_str:  				# recebe em a1 a str do comando a ser verificada
+	la $a0, terminal_cmd  		# carrega em $a0 a messagem escrita no termial
+	addi $sp, $sp, -4 	 	# guarda o espaço na memoria para salvar o ra
+	sw $ra, 0($sp)  			# guarda o espaço na memoria para salvar o ra
+	jal strcmp  			# envia para o comparador de strings
+	lw $ra, 0($sp)  			# guarda o espaço na memoria para salvar o ra
+	addi $sp, $sp, 4  		# guarda o espaço na memoria para salvar o ra
 	
-	jr $ra
+	jr $ra					# retorna para Ra
+
+
+
+separador_comando:			#  pega a string que foi digitada pelo ususario
+	la $a0, terminal_cmd  		#  pega a string que foi digitada pelo ususario e carrega em a0
+	move $t2, $a0			# move $a0 para $t2 para que o valor seja guardado
+	
+	loop_verificador_n:   #  verifica se o camando que o usuario escreveu continha ('-')
+	
+		lb $t3, 0($t2)  					# carrega a valor escrito na string sequencialmente a fim de buscar "-"
+		beq $t3, 0, removedor_n 			# verifica se existe  um "-"
+		addi $t2, $t2, 1  				# pula apara o proximo caractere
+		j loop_verificador_n				# retorna ao loop
 		
-separador_comando:#  pega a string que foi digitada pelo ususario
-	la $a0, terminal_cmd  #  pega a string que foi digitada pelo ususario e carrega em a0
-	move $t2, $a0
-	
-	loop_verificador_n:
-	
-		lb $t3, 0($t2)
-		beq $t3, 0, removedor_n
-		addi $t2, $t2, 1
-		j loop_verificador_n
-		
-	removedor_n:
-		addi $t2, $t2, -1
-		sb $0, 0($t2)
+	removedor_n:  			#  caso o valor seja achado "-" o remove
+		addi $t2, $t2, -1  	#  caso o valor seja achado "-" o remove
+		sb $0, 0($t2) 	#  caso o valor seja achado "-" o remove
 	
 	loop_comparador_com:  # loop para isolar o comando dos itens a serem removidos ou inceridos 
 	
-		lb $t1, 0($a0)  # carrega o que esta em a0 no tempo de execução para verificar se o - foi achada
-		beq $t1, 45, com_enc  # verifica se o - foi achado
-		beq $t1, 0, cmd_n_enc # verifica se o usuario n dijitou o comando inteiro
-		addi $a0, $a0, 1  # adiciona 1 a a0 par apular para o proxim o caractere
-		j loop_comparador_com  # retorna ao loop
+		lb $t1, 0($a0)  				# carrega o que esta em a0 no tempo de execução para verificar se o - foi achada
+		beq $t1, 45, com_enc  		# verifica se o - foi achado
+		beq $t1, 0, cmd_n_enc 		# verifica se o usuario n dijitou o comando inteiro
+		addi $a0, $a0, 1  			# adiciona 1 a a0 par apular para o proxim o caractere
+		j loop_comparador_com  		# retorna ao loop
 		
 	com_enc:
 		sb $0 0($a0)	
@@ -103,7 +113,7 @@ separador_comando:#  pega a string que foi digitada pelo ususario
 # Função que verifica se o comando digitado é válido    
 verifica_cmds1:
 	
-	la $a1, str_cmd_ad_m			# Lê o endereço da string de comando para adicionar morador
+	la $a1, str_cmd_ad_m				# Lê o endereço da string de comando para adicionar morador
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, 0, cmd_ad_m			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de adicionar morador, dai pula para função responsável
 	
@@ -172,12 +182,13 @@ cmd_ad_m:
         sb $0, 0($t1)
         addi $a1, $a0, 3				# Soma mais 2 aos 11 somados afim de ir para onde começa o nome do morador
 	
-	
+	# guarda o ra
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
-	jal inserirPessoa
+	jal inserirPessoa  # envia para inserir pessoa
 	
+	# recupera o ra
         lw $ra, 0($sp)
         addi $sp, $sp, 4
         j fim_leitura					# Pula para função que quebra linha e pula para a main
@@ -189,7 +200,8 @@ inserirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o
   addi $t2, $t7, 7480 # maior valor possivel  a ser escrito no sistema
   addi $t4, $a1, 0  #  salva o que esta em a1, para utilizar em algumas outras funçoes
   
-  addi $sp, $sp, -16
+  # guarda todas as variaveis importantes para regata-los
+  addi $sp, $sp, -16  
   sw $t7, 0($sp)
   sw $s2, 4($sp)
   sw $t4, 8($sp)
@@ -197,6 +209,7 @@ inserirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o
   
   jal verifica_andar
   
+  # recupera todas as variaveis importantes para seus registradores
   lw $ra, 12($sp)
   lw $t4, 8($sp)
   lw $s2, 4($sp)
@@ -207,20 +220,20 @@ inserirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o
   move $t7, $v0
   j ap_insere
   
-  ap_insere:  # se chegarmos aqui é porque o apartamento foi encontrado, agora vamos verificar se o ap pode receber mais uma pessoa
+  ap_insere:  								# se chegarmos aqui é porque o apartamento foi encontrado, agora vamos verificar se o ap pode receber mais uma pessoa
     
-    addi $t7, $t7, 3 # tendo recebi o apartamento vamos vasculhar jogando para a 1 posição das pessoas
-    addi $t5, $0, 0 # inicia meu contador de pessoas caso seja 5 o a paratamento está cheio
+    addi $t7, $t7, 3 							# tendo recebi o apartamento vamos vasculhar jogando para a 1 posição das pessoas
+    addi $t5, $0, 0 							# inicia meu contador de pessoas caso seja 5 o a paratamento está cheio
     j vaga
     
-    vaga:  # inicia um loop que verifica vaga por vaga
+    vaga:  									# inicia um loop que verifica vaga por vaga
       
-      lb $t3, 0($t7)  # carrega 1  caracter de de cada nome para saber se aquele ap esta disponivel
-      beq $t3, 0, vaga_disponivel  # pula para a area de escriata ja que a vaga esta disponivel
-      addi $t7, $t7, 20  # pula para o proximo nome a verificar
-      addi $t5, $t5, 1  # verifica se o total de pessoas daquele ap ja foi verificado
-      beq $t5, 5, apt_cheio  # caso todos os possiveis locais para incerir pessoas foram preenchidos
-      j vaga  # retorna ao loop
+      lb $t3, 0($t7)  							# carrega 1  caracter de de cada nome para saber se aquele ap esta disponivel
+      beq $t3, 0, vaga_disponivel  					# pula para a area de escriata ja que a vaga esta disponivel
+      addi $t7, $t7, 20  						# pula para o proximo nome a verificar
+      addi $t5, $t5, 1  							# verifica se o total de pessoas daquele ap ja foi verificado
+      beq $t5, 5, apt_cheio 				 		# caso todos os possiveis locais para incerir pessoas foram preenchidos
+      j vaga  								# retorna ao loop
 
   vaga_disponivel:  # se chegarmos aqui é por que o nome pode ser incerido
     
@@ -495,7 +508,6 @@ inserirAuto: #$a0 AP - $a1 TIPO AUTO (C OU M) - $a2 MODELO - $a3 COR
     	   #Retornar mensagem “Falha: AP com numero max de automóveis"
     	   jr $ra
     	    
-#######################################################################################################################
 	
 # Função de remover automóvel (falta confirmar com o professor se vai funcionar assim mesmo)	
 cmd_rm_a:
@@ -644,6 +656,8 @@ cmd_rm_a:
     	jal strcmp  			#Compara o caracter de cor
     	move $s5, $v0			#Salva resultado da função em $s5	
     	
+    	# recupera as variaveis salvas
+    	
     	lw   $ra, 0($sp)
     	lw   $t3, 4($sp)
     	lw   $t2, 8($sp)	
@@ -727,9 +741,9 @@ cmd_if_ap:
 	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	addi $a0, $a0, 8				# Soma 8 ao endereço afim de ir para onde começa o numero do AP 
 	
-	jal verifica_ap
+	jal verifica_ap   			 	#verifica se o ap esta vasio
 	
-	beq $v0, 2, ap_sem_n
+	beq $v0, 2, ap_sem_n			# acaso esteja va para ap_sem_n
 	
 	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	addi $a0, $a0, 8				# Soma 8 ao endereço afim de ir para onde começa o numero do AP 
@@ -739,86 +753,86 @@ cmd_if_ap:
 	
 	info_ap_esp:   # recebe em a1 o numero do ap
 	  
-	 addi $sp, $sp, -4  # armazena o ra para utilização futura
- 	 sw $ra, 0($sp)  # armazena o ra para utilização futura
+	 addi $sp, $sp, -4  		# armazena o ra para utilização futura
+ 	 sw $ra, 0($sp)  			# armazena o ra para utilização futura
   
-	  jal verifica_andar
+	  jal verifica_andar		# acha o andar e seta o ponteiro para ele
 	  
-	 beq $v0, -1, main
+	 beq $v0, -1, main  		# acha o andar e seta o ponteiro para ele
   
- 	 lw $ra, 0($sp)  # recupera o ra para utilização futura
-  	addi $sp, $sp, 4 # recupera o ra para utilização futura
+ 	 lw $ra, 0($sp)  			# recupera o ra para utilização futura
+  	addi $sp, $sp, 4 		# recupera o ra para utilização futura
   	
   	
-  	move $t1, $v0
+  	move $t1, $v0  			# move o ponteiro para t1 no intuito de gerar os prints
 	
 	  
-	 li $v0, 4
-   	 la $a0, msg_info_ap0
-   	 syscall
+	 li $v0, 4  					# carrega "AP e printa"
+   	 la $a0, msg_info_ap0			# carrega "AP e printa"
+   	 syscall					# carrega "AP e printa"
    	 
-   	 li $v0, 4
-   	 move $a0, $t1
-   	 syscall
+   	 li $v0, 4  					# printa o numero do apartamento
+   	 move $a0, $t1				# printa o numero do apartamento
+   	 syscall					# printa o numero do apartamento
    	 
-   	 li $v0, 4
-   	 la $a0, quebra_linha
-   	 syscall
+   	 li $v0, 4					# qebra a linha com \n
+   	 la $a0, quebra_linha			# qebra a linha com \n
+   	 syscall					# qebra a linha com \n
    	 
-   	  li $v0, 4
-   	 la $a0, msg_info_ap1
-   	 syscall
+   	  li $v0, 4 					# printa Moradores:
+   	 la $a0, msg_info_ap1			# printa moradores
+   	 syscall					# printa moradores
    	 
-   	 li $v0, 4
-   	 la $a0, quebra_linha
-   	 syscall
+   	 li $v0, 4					# qebra a linha com \n
+   	 la $a0, quebra_linha 			# qebra a linha com \n
+   	 syscall					# qebra a linha com \n
    	 
-   	 addi $t1, $t1, 3
-   	 addi $t2, $0, 0
+   	 addi $t1, $t1, 3				# pula o ponteiro para o primeiro nome inserido no ap
+   	 addi $t2, $0, 0				# inicia o contador de pessoas pro andar
    	 
-   	 loop_info_aps_moradores:
+   	 loop_info_aps_moradores:  # inicia o loop de moradores
    	 
-   	 	lb $t3, 0($t1)
-   	 	bne $t3, 0, imprime_mora
+   	 	lb $t3, 0($t1)  				# carrega o 1 item de cada andar por que se não for 0 deve emprimir se for 0 não deve imprimir
+   	 	bne $t3, 0, imprime_mora  		# verifica se $t3 é igual a 0
    	 	
    	 
-   	 fim_loop_aps:
-   	 	addi $t2, $t2, 1
-   	 	addi $t1, $t1, 20
-   	 	beq $t2, 5, continua_info
-   	 	j loop_info_aps_moradores
+   	 fim_loop_aps:  				# verifica se os 5 moradores forão verificados
+   	 	addi $t2, $t2, 1			# adiciona 1 no contador de pessoas
+   	 	addi $t1, $t1, 20		# pula para a prosiam pessoa
+   	 	beq $t2, 5, continua_info    # verifica se a contagem ja chegou ao fim 5 pessoas
+   	 	j loop_info_aps_moradores  # retorna ao loop loop_info_aps_moradores
    	 	
-   	 imprime_mora:
-   			li $v0, 4
-   			la $a0, msg_info_ap_spa
-   	 		syscall
+   	 imprime_mora:  					# imprime o morador especifico
+   			li $v0, 4  					# imprime a msg morador 
+   			la $a0, msg_info_ap_spa		# imprime a msg morador 
+   	 		syscall					# imprime a msg morador 
    	 		
-   	 		li $v0, 4
-   	 		move $a0, $t1
-   			syscall
+   	 		li $v0, 4					# carrega o morador na tela
+   	 		move $a0, $t1				# imprime o morador na tela
+   			syscall					# imprime o morador na tela
    			
-   			li $v0, 4
-   			la $a0, quebra_linha
-   	 		syscall
-   			j fim_loop_aps
+   			li $v0, 4					# quebra a linha
+   			la $a0, quebra_linha			# quebra a linha
+   	 		syscall					# quebra a linha
+   			j fim_loop_aps # retorna ao loop para imprimir o proximo morador
    	
-    continua_info:
-    	lb $t3, 0($t1)
+    continua_info: 						#  continua a impreção saindo do loop
+    	lb $t3, 0($t1)  						# carrega o caractere para saber se o espaço esta vasio ou tem um carro/ moto escrito
     	
-    	beq $t3, 99, imprime_carro
-    	beq $t3, 109, imprime_moto
-    	addi $t1, $t1, 42
-    	lb $t3, 0($t1)
-    	beq $t3, 109, imprime_motof
-    	j main
+    	beq $t3, 99, imprime_carro				# carrega o caractere para saber se o espaço esta vasio ou tem um carro/ moto escrito
+    	beq $t3, 109, imprime_moto			# carrega o caractere para saber se o espaço esta vasio ou tem um carro/ moto escrito
+    	addi $t1, $t1, 42					# caso não tenha nada escrito na primeira posição pula para a segunda afin de verificar se a segunda posição esta vasia
+    	lb $t3, 0($t1)  						# carrega o valor para verificar se o valor é o de uma moto
+    	beq $t3, 109, imprime_motof			# carrega o valor para verificar se o valor é o de uma moto
+    	j main							# pula para a main
     	
-    veri_m_moto:
-    	addi $t1, $t1, 20
+    veri_m_moto:							# verifica se o ultimo espaço para moto foi utilizado
+    	addi $t1, $t1, 20					# pula para a posução da segunda moto	
     	lb $t3, 0($t1)
-    	beq $t3, 109, imprime_motof
-    	j main
+    	beq $t3, 109, imprime_motof			# verifica se o espaço foi utilizado
+    	j main							#retorna a main
     
-    imprime_carro:
+    imprime_carro:  						#  esse comando imprime carro: na tela
     	
     	li $v0, 4
    	la $a0, msg_info_ap2
@@ -827,9 +841,9 @@ cmd_if_ap:
     	li $v0, 4
    	la $a0, quebra_linha
    	syscall
-   	j cont_impre
+   	j cont_impre  						# imprime a continuação
    	
-   imprime_moto:
+   imprime_moto:						# esse comando imprime carro: na tela
    	li $v0, 4
    	la $a0, msg_info_ap3
    	syscall
@@ -839,55 +853,65 @@ cmd_if_ap:
    	syscall
    	j cont_impre
    
-   imprime_motof:
-   	addi $t4, $0, 123 
-   	j cont_impre
+   imprime_motof:						# imprime a ultima moto
+   	addi $t4, $0, 123 					# imprime a ultima moto enviando uma senha para encerar o loop
+   	j cont_impre						# imprime a continuação
    	
-    cont_impre:
+    cont_impre:  # impreção geral de um carro
+    	#  adiciona um espaço antes da impreção
     	li $v0, 4
    	la $a0, msg_info_ap_spa
    	syscall
    	
+   	# imprime
    	li $v0, 4
    	la $a0, msg_info_ap4
    	syscall
    	
+   	# imprime nome na tela
    	addi $t1, $t1, 2
    	li $v0, 4
    	move $a0, $t1
    	syscall
    	
+   	# quebra linha
    	li $v0, 4
    	la $a0, quebra_linha
    	syscall
     	
+    	#  adiciona um espaço antes da impreção
     	li $v0, 4
    	la $a0, msg_info_ap_spa
    	syscall
    	
+   	#  imprime cor na tela
    	li $v0, 4
    	la $a0, msg_info_ap5
    	syscall
    	
-   	addi $t1, $t1, 20
-   	li $v0, 4
+   	addi $t1, $t1, 20  #  pula para o proxio item cor 
+   	# imprime a cor na tela
+   	li $v0, 4  
    	move $a0, $t1
    	syscall
    	
+   	#  quebra a linha
    	li $v0, 4
    	la $a0, quebra_linha
    	syscall
    	
-   	lb $t3, 0($t1)
-   	beq $t3, 99, main
-   	beq $t4, 123, main
-   	j veri_m_moto
+   	
+   	lb $t3, 0($t1)  			# carrega o valor do ponteiro em $t3 
+   	beq $t3, 99, main		# verifica se ja podemos encerrar os prints e enviar para a main
+   	beq $t4, 123, main		# verifica se ja podemos encerrar os prints e enviar para a main
+   	j veri_m_moto  			# caso chegarmos aqui deve-se verificar se devemos incerir uma nova moto
     	
-    	ap_sem_n:
-    		li $v0, 4
+    	ap_sem_n:  # caso não tenha nigem no ap deve enviar uma msg de erro na tela e retorna a main
+    		li $v0, 4 
    		la $a0, msg_e_ap_s_n
    		syscall
-   		j main
+   		j main  # retorna a main
+   		
 # Função de informações gerais dos APs	
 cmd_if_g:
 	
@@ -898,82 +922,82 @@ cmd_if_g:
         addi $sp, $sp, 4
         j reslt_veri
         
-verificador_info_geral:  # é responsavel por realizar a contagem das apartamentos com pessoas e sem pessoas
-  move $t1, $s2  #  pega o inicializador, como ele sempre esta em s2   
-  addi $t2, $0, 0   #  inicia os contadores
-  addi $t3, $0, 0  #  inicia os conatdores
+verificador_info_geral:  		# é responsavel por realizar a contagem das apartamentos com pessoas e sem pessoas
+  move $t1, $s2  			#  pega o inicializador, como ele sempre esta em s2   
+  addi $t2, $0, 0  			#  inicia os contadores
+  addi $t3, $0, 0  			#  inicia os conatdores
   
   #  os contadores estão ($t2 com a contagem dos aps cheios e $t3 com os aps sem pessoas)
   
-  loop_apts:  # loop principal que passa de ap em ap
-    move $a0, $t1  #  move a ponta do apartamento a ser verificado
-    addi $t1, $t1, 187  # pula para o proximo ap
+  loop_apts:  				# loop principal que passa de ap em ap
+    move $a0, $t1  			#  move a ponta do apartamento a ser verificado
+    addi $t1, $t1, 187  			# pula para o proximo ap
     
-    addi $sp, $sp, -16  #  libera o espaço na memoria para evitar problemas com conflitos
-    sw $t1, 0($sp)  #  qurda t1 contagem de aps
-    sw $t2, 4($sp)  #  qurda t2 contagem de aps vasios
-    sw $t3, 8($sp)  #  qurda t3 contagem de aps cheios
-    sw $ra, 12($sp)  #  quarda a posição no pc
+    addi $sp, $sp, -16  		#  libera o espaço na memoria para evitar problemas com conflitos
+    sw $t1, 0($sp)  			#  qurda t1 contagem de aps
+    sw $t2, 4($sp)  			#  qurda t2 contagem de aps vasios
+    sw $t3, 8($sp)  			#  qurda t3 contagem de aps cheios
+    sw $ra, 12($sp)  			#  quarda a posição no pc
     
-    jal verifica_ap  # verifica se o ap esta cheio
+    jal verifica_ap  			# verifica se o ap esta cheio
     
-    lw $ra, 12($sp)  #  recupera a posição no pc
-    lw $t3, 8($sp)  #  recupera t3 contagem de aps cheios
-    lw $t2, 4($sp)  #  recupera t2 contagem de aps vasios
-    lw $t1, 0($sp)  #  recupera t1 contagem de aps
-    addi $sp, $sp, 16  #  libera o espaço na memoria para evitar problemas com conflitos
+    lw $ra, 12($sp)  			#  recupera a posição no pc
+    lw $t3, 8($sp)  			#  recupera t3 contagem de aps cheios
+    lw $t2, 4($sp)  			#  recupera t2 contagem de aps vasios
+    lw $t1, 0($sp)  			#  recupera t1 contagem de aps
+    addi $sp, $sp, 16  			#  libera o espaço na memoria para evitar problemas com conflitos
     
-    beq $v0, 2, apt_va  #  verifica se o apt esta cheio ou não
-    beq $v0, 1, apt_ch  #  verifica se o apt esta cheio ou não
+    beq $v0, 2, apt_va  		#  verifica se o apt esta cheio ou não
+    beq $v0, 1, apt_ch  		#  verifica se o apt esta cheio ou não
     
-    verificador_fim_aps: # verifica se a contagem chegou ao fim
-      add $t4, $t2, $t3  #  soma os contadores para fer se juntos chegam a 40
+    verificador_fim_aps: 		# verifica se a contagem chegou ao fim
+      add $t4, $t2, $t3  		#  soma os contadores para fer se juntos chegam a 40
       beq $t4, 40, apts_verificados  # verifica a contagem
-      j loop_apts  # caso não estejam retorna ao loop
+      j loop_apts  			# caso não estejam retorna ao loop
 
-    apt_ch:  # caso esteja cheio soma 1 em  t2
-      addi $t2, $t2, 1  # caso esteja cheio soma 1 em  t2
-      j verificador_fim_aps #  varifica se acabarao os aps
+    apt_ch: 					# caso esteja cheio soma 1 em  t2
+      addi $t2, $t2, 1  			# caso esteja cheio soma 1 em  t2
+      j verificador_fim_aps 		#  varifica se acabarao os aps
       
-    apt_va:  # caso não esteja cheio soma 1 em  t3
-      addi $t3, $t3, 1  # caso não esteja cheio soma 1 em  t3
-      j verificador_fim_aps #  varifica se acabarao os aps
+    apt_va:  				# caso não esteja cheio soma 1 em  t3
+      addi $t3, $t3, 1  			# caso não esteja cheio soma 1 em  t3
+      j verificador_fim_aps 		#  varifica se acabarao os aps
       
-    apts_verificados:  # verifica se todos os apartamentos estão  verificados
-      move $v0, $t2  #  caso sim coloca em v0 os aps cheios 
-      move $v1, $t3  #  caso sim coloca em v1 os não cheios
-      jr $ra  # retorna a antes da função
+    apts_verificados:  			# verifica se todos os apartamentos estão  verificados
+      move $v0, $t2  			#  caso sim coloca em v0 os aps cheios 
+      move $v1, $t3  			#  caso sim coloca em v1 os não cheios
+      jr $ra  					# retorna a antes da função
 	
-    reslt_veri:
+    reslt_veri:  				# local para gerar os prints que são nescessarios para a contabulidade geral de vagas em apartamentos 
         
-        move $t1, $v0
-        move $t2, $v1
+        move $t1, $v0 			# carrega o valor que vem de v0 aps vasios em $t1
+        move $t2, $v1 			# carrega o valor que vem de v1 aps vasios em $t2
         
-	li $v0, 4
-   	la $a0, msg_info_g1
-   	syscall
+	li $v0, 4 				 #  imprime o texto vasios na tela
+   	la $a0, msg_info_g1		#  imprime o texto vasios na tela
+   	syscall				#  imprime o texto vasios na tela
    	
-   	li $v0, 1
-   	move $a0, $t1
-   	syscall
+   	li $v0, 1  				# imprime o resultado de t1 em tela
+   	move $a0, $t1			# imprime o resultado de t1 em tela
+   	syscall				# imprime o resultado de t1 em tela
 	
-	li $v0, 4
-   	la $a0, quebra_linha
-   	syscall
+	li $v0, 4                             # pula para a proxima linha
+   	la $a0, quebra_linha		# pula para a proxima linha
+   	syscall				# pula para a proxima linha
    	
-   	li $v0, 4
-   	la $a0, msg_info_g2
-   	syscall
+   	li $v0, 4				# imprime não vasios em tela
+   	la $a0, msg_info_g2		# imprime não vasios em tela
+   	syscall				# imprime não vasios em tela
    	
-   	li $v0, 1
-   	move $a0, $t2
-   	syscall
+   	li $v0, 1				# imprime o resultado de t2 em tela
+   	move $a0, $t2			# imprime o resultado de t2 em tela
+   	syscall				# imprime o resultado de t2 em tela
 	
-	li $v0, 4
-   	la $a0, quebra_linha
-   	syscall
+	li $v0, 4				# pula para a proxima linha
+   	la $a0, quebra_linha		# pula para a proxima linha
+   	syscall				# pula para a proxima linha
 	
-	j main
+	j main  				# retorna a main
 	
 # Função de salvar no arquivo
 cmd_s:
@@ -994,18 +1018,18 @@ cmd_f:
 	
 	formatar: # Percorre os apartamentos apagando todos os dados
 	
-	addi $t1, $s2, 3 # Armazena a primeira posição do primeiro AP em t1
-  	addi $t0, $s2, 7483 # Armazena a última posição dos AP's + 3 em t0
-  	addi $t3, $s2, 187  #  Armazena a última posição do primeiro AP em t3
-  	addi $t5, $0, 0 # Armazena o /0 em t5
+	addi $t1, $s2, 3 			# Armazena a primeira posição do primeiro AP em t1
+  	addi $t0, $s2, 7483 		# Armazena a última posição dos AP's + 3 em t0
+  	addi $t3, $s2, 187  		#  Armazena a última posição do primeiro AP em t3
+  	addi $t5, $0, 0 			# Armazena o /0 em t5
   
-  	resetar_AP: # Remove todos os dados de todos os AP's
-    	sb $t5, 0($t1)  # salva /0 na memoria
-    	addi $t1, $t1, 1 # adiciona 1 ao contador
-    	bne $t1, $t3, resetar_AP  # Verifica se chegou ao fim do AP
-    	addi $t1, $t1, 3 # Pula para a primeira posição do próximo AP
-    	addi $t3, $t3, 187 # Armazena a última posição de cada AP em t3
-    	bne $t1, $t0, resetar_AP # Verifica se chegou a última posição de todos os AP's
+  	resetar_AP: 			# Remove todos os dados de todos os AP's
+    	sb $t5, 0($t1)  			# salva /0 na memoria
+    	addi $t1, $t1, 1 			# adiciona 1 ao contador
+    	bne $t1, $t3, resetar_AP  	# Verifica se chegou ao fim do AP
+    	addi $t1, $t1, 3 			# Pula para a primeira posição do próximo AP
+    	addi $t3, $t3, 187 		# Armazena a última posição de cada AP em t3
+    	bne $t1, $t0, resetar_AP 	# Verifica se chegou a última posição de todos os AP's
    
   	j main  #  Retorna para a chamada da função
 	
@@ -1013,13 +1037,13 @@ cmd_f:
 	
 cmd_valido:
 	li $v0, 4          				# carrega o código do serviço de impressão de string
-	la $a0, msg_c_v       		# carrega o endereço da mensagem
+	la $a0, msg_c_v       			# carrega o endereço da mensagem
 	syscall       				# chama o serviço de impressão de string
 	jr $ra
 
 cmd_invalido:
 	li $v0, 4          				# carrega o código do serviço de impressão de string
-	la $a0, msg_c_i       		# carrega o endereço da mensagem
+	la $a0, msg_c_i       			# carrega o endereço da mensagem
 	syscall       				# chama o serviço de impressão de string
 	j main
 
@@ -1033,81 +1057,81 @@ strcmp:  # inicia a função comparador
     
     loop_principal: # inicia o loop principal da função
       
-      lb $t0, 0($a0)  # carrega o valor a partir de a0 a ser avaliado 
-      addi $a0, $a0, 1  # incrementa para que a proxima letra seja pega.
+      lb $t0, 0($a0)  		# carrega o valor a partir de a0 a ser avaliado 
+      addi $a0, $a0, 1  		# incrementa para que a proxima letra seja pega.
       
-      lb $t1, 0($a1)  # carrega o valor a partir de a1 a ser avaliado 
-      addi $a1, $a1, 1  # incrementa para que a proxima letra seja pega.
+      lb $t1, 0($a1)  		# carrega o valor a partir de a1 a ser avaliado 
+      addi $a1, $a1, 1  		# incrementa para que a proxima letra seja pega.
       
-      bne $t0, $t1, final_diferente  #  verifica se os valores analizados são diferentes
+      bne $t0, $t1, final_diferente  	#  verifica se os valores analizados são diferentes
       
-      beq $t0, $0, filtro_1  #  verifica se os dois valores são iguais
-      beq $t1, $0, final_diferente  #  chegando aqui verifica-se se a outra string tenha acabado ja que se a mesma acabou ambas são diferentes
+      beq $t0, $0, filtro_1  			#  verifica se os dois valores são iguais
+      beq $t1, $0, final_diferente  		#  chegando aqui verifica-se se a outra string tenha acabado ja que se a mesma acabou ambas são diferentes
       
-      j loop_principal  #  rotorna ao loop principal caso nenhum criterio de parada seja atendido
+      j loop_principal  				#  rotorna ao loop principal caso nenhum criterio de parada seja atendido
       
-      filtro_1:  #  verifica se os resultados anlizados são iguais a 0, ja que se é 0 significa que ambas as strings são iguais
-        beq $t1, $0, final_igual  # caso sejão iguais va poara final_igual
-        j final_diferente  # sendo diferente, va para final_diferente
+      filtro_1:  					#  verifica se os resultados anlizados são iguais a 0, ja que se é 0 significa que ambas as strings são iguais
+        beq $t1, $0, final_igual  		# caso sejão iguais va poara final_igual
+        j final_diferente  				# sendo diferente, va para final_diferente
       
-      final_diferente:  # para os casos de 1 - uma string encerrar antes da outra, 2 - o primeiro valor diferente entre um e outro
+      final_diferente:  	# para os casos de 1 - uma string encerrar antes da outra, 2 - o primeiro valor diferente entre um e outro
       
-        sub $v0, $t0, $t1 # Realiza uma subtração entre o ultimo valor de a0 e o ultimo valor de a1, para atender as diretrizes da função, alem de devolver o resultado em v0.
-        jr $ra #  retorna a execução normal do programa 
+        sub $v0, $t0, $t1 			# Realiza uma subtração entre o ultimo valor de a0 e o ultimo valor de a1, para atender as diretrizes da função, alem de devolver o resultado em v0.
+        jr $ra 					#  retorna a execução normal do programa 
         
-      final_igual:  # para o caso de as 2 strings serem iguais 
+      final_igual:  					# para o caso de as 2 strings serem iguais 
          
-         addi $v0, $0, 0  # o retorno em v0 deve ser 0
-         jr $ra  #  retorna a execução normal do programa 
+         addi $v0, $0, 0  			# o retorno em v0 deve ser 0
+         jr $ra  					#  retorna a execução normal do programa 
 
 strcpy: #espaço na memoria em a0, a1 a mensagema ser copiada
 
-  addi $t2, $a0, 0  # adiciona os endereços a t2
-  addi $t3, $a1, 0  # adiciona os endereços as t3
-  addi $t4, $0, 0  # inicia um contador de caracteraes (19)
+  addi $t2, $a0, 0  			# adiciona os endereços a t2
+  addi $t3, $a1, 0  			# adiciona os endereços as t3
+  addi $t4, $0, 0  			# inicia um contador de caracteraes (19)
   
   loop:
   
-    lb $t1, 0($t3) # carrega em t1 o conteudo de a0 no momento
-    addi $t3, $t3, 1  # pula para a proxima casa de a0
+    lb $t1, 0($t3)				# carrega em t1 o conteudo de a0 no momento
+    addi $t3, $t3, 1  			# pula para a proxima casa de a0
     
-    sb $t1, 0($t2) # carrega em t2 o conteudo de a1 no momento
-    addi $t2, $t2, 1  # pula para a proxima casa de a0
-    addi $t4, $t4, 1
-    beq $t4, 19, fim_str
-    bne $t0, $t1, loop # cetificace de que a string ainda não acabou
+    sb $t1, 0($t2) 			# carrega em t2 o conteudo de a1 no momento
+    addi $t2, $t2, 1  			# pula para a proxima casa de a0
+    addi $t4, $t4, 1			# adiciona 1 a $t4
+    beq $t4, 19, fim_str		# verifica se a string ja chegou ao fim 19 espasos
+    bne $t0, $t1, loop 			# cetificace de que a string ainda não acabou
   
-  addi $t1, $0, 0 #carrega o valor a ser incerido na copia "/0"
-  sb $t1, 0($t2) # valor a ser incerido na copia "/0"
-  addi $v0, $a0, 0  # retorna a função em v0
-  jr $ra  # rotorna ao fluxo normal
+  addi $t1, $0, 0 			#carrega o valor a ser incerido na copia "/0"
+  sb $t1, 0($t2) 				# valor a ser incerido na copia "/0"
+  addi $v0, $a0, 0  			# retorna a função em v0
+  jr $ra  					# rotorna ao fluxo normal
   
   fim_str:
-  addi $t1, $0, 0 #carrega o valor a ser incerido na copia "/0"
-  sb $t1, 0($t2) # valor a ser incerido na copia "/0"
-  addi $v0, $a0, 0  # retorna a função em v0
-  jr $ra  # rotorna ao fluxo normal
+  addi $t1, $0, 0				#carrega o valor a ser incerido na copia "/0"
+  sb $t1, 0($t2) 				# valor a ser incerido na copia "/0"
+  addi $v0, $a0, 0  			# retorna a função em v0
+  jr $ra  					# rotorna ao fluxo normal
          
-verifica_ap: # Percorre um apartamento verificando se está vazio - O número do ap deve ser informado em a0
-  addi $sp, $sp, -4  # libera espaço na memoria para salvar os registradores antes da função
-  sw $ra, 0($sp)  # salvando o registrador de onde estavamos no codigo
+verifica_ap: 				# Percorre um apartamento verificando se está vazio - O número do ap deve ser informado em a0
+  addi $sp, $sp, -4  			# libera espaço na memoria para salvar os registradores antes da função
+  sw $ra, 0($sp)  			# salvando o registrador de onde estavamos no codigo
   
   jal verifica_andar
   
-  lw $ra, 0($sp) # recebendo o registrador de onde estavamos no codigo
-  addi $sp, $sp, 4  # recebendo o espaço na memoria para salvar os registradores antes da função
+  lw $ra, 0($sp) 				# recebendo o registrador de onde estavamos no codigo
+  addi $sp, $sp, 4  			# recebendo o espaço na memoria para salvar os registradores antes da função
   
-  addi $t2, $v0, 3 # Carrega a posição da primeira pessoa do AP
-  addi $t4, $0, 0 # inicia meu contador de pessoas caso seja 5 o a paratamento está cheio
+  addi $t2, $v0, 3 			# Carrega a posição da primeira pessoa do AP
+  addi $t4, $0, 0 			# inicia meu contador de pessoas caso seja 5 o a paratamento está cheio
   
   
   vaga_ap:
-    lb $t3, 0($t2)  # carrega 1 posição de cada nome para saber se aquele ap esta disponivel
-    bne $t3, 0, apt_ocupado  # pula para a area de escriata ja que a vaga esta disponivel
-    addi $t2, $t2, 20  # pula para o proximo nome a verificar
-    addi $t4, $t4, 1  # Incrementa o contador de pessoas verificadas
-    beq $t4, 5, apt_vazio  # caso todos os possiveis locais para incerir pessoas foram preenchidos
-    j vaga_ap # Reinicia o loop
+    lb $t3, 0($t2)  			# carrega 1 posição de cada nome para saber se aquele ap esta disponivel
+    bne $t3, 0, apt_ocupado  	# pula para a area de escriata ja que a vaga esta disponivel
+    addi $t2, $t2, 20  			# pula para o proximo nome a verificar
+    addi $t4, $t4, 1  			# Incrementa o contador de pessoas verificadas
+    beq $t4, 5, apt_vazio  		# caso todos os possiveis locais para incerir pessoas foram preenchidos
+    j vaga_ap 				# Reinicia o loop
       
       
   apt_ocupado: # Caso exista uma pessoa no AP, retorna a função.
@@ -1118,32 +1142,32 @@ verifica_ap: # Percorre um apartamento verificando se está vazio - O número do a
     addi $v0, $0, 2 # Carrega 2 em v0 
     jr $ra # Retorna a função
 
-verifica_andar: # Em a0 deve ser disposto o andara ser verificado e em a1 o ponteiro para o inicio do space de andares
+verifica_andar: 				# Em a0 deve ser disposto o andara ser verificado e em a1 o ponteiro para o inicio do space de andares
   
   move $a1, $s2
-  move $t6, $a1  # salva a posição inicial de a1
-  addi $t7, $0, 0  # salva em t1 0
-  addi $t7, $a1, 7480  # t7 marca o fim doa aps
-  move $t5, $a0  # armazena o ponteiro do apartamento incerido 
+  move $t6, $a1  			# salva a posição inicial de a1
+  addi $t7, $0, 0  			# salva em t1 0
+  addi $t7, $a1, 7480  		# t7 marca o fim doa aps
+  move $t5, $a0  			# armazena o ponteiro do apartamento incerido 
   
   verificador_andara: 
-    move $a0, $t5 # passa o ponteiro do apartamento incerido 
-    addi $a1, $t6, 0  # carrega a  posiçaoo do espaço disponivel em vigor para ser comparada
-    addi $t8, $ra, 0  # salva onde estava no codigo
-    jal strcmp  # verifica se as strings são iguais (caso sejam: o apartamento foi achado)
-    addi $ra, $t8, 0 # recupera onde estava no codigo
-    beq $v0, 0, ap_enc  # confere se as strings são iguais  se sim envia para a inserção
+    move $a0, $t5 			# passa o ponteiro do apartamento incerido 
+    addi $a1, $t6, 0  			# carrega a  posiçaoo do espaço disponivel em vigor para ser comparada
+    addi $t8, $ra, 0  			# salva onde estava no codigo
+    jal strcmp  				# verifica se as strings são iguais (caso sejam: o apartamento foi achado)
+    addi $ra, $t8, 0 			# recupera onde estava no codigo
+    beq $v0, 0, ap_enc  		# confere se as strings são iguais  se sim envia para a inserção
 
-    addi $t6, $t6, 187 # pula para o numero do proximo apartamento
+    addi $t6, $t6, 187 			# pula para o numero do proximo apartamento
     beq $t6, $t7, ap_n_encontrado  # verifica se a contagem ja cobriu todos os apartamentos
-    j verificador_andara  # retorna ao inicio do loop
+    j verificador_andara  		# retorna ao inicio do loop
     
-  ap_enc:  # retorna a posição que dio andar
-    move $v0, $t6  #  move para v0 o retorno
-    jr $ra  # retorna para a execução do arquivo
+  ap_enc:  					# retorna a posição que dio andar
+    move $v0, $t6  			#  move para v0 o retorno
+    jr $ra  					# retorna para a execução do arquivo
     
-ap_n_encontrado:  # devolve 1 em v0 pq o ap não foi encontrado
-    li $v0, 4          				# carrega o código do serviço de impressão de string
+ap_n_encontrado:  			# devolve 1 em v0 pq o ap não foi encontrado
+    li $v0, 4          			# carrega o código do serviço de impressão de string
     la $a0, msg_e_n_ap       		# carrega o endereço da mensagem
     syscall       				# chama o serviço de impressão de string
     addi $v0, $0, -1 # carrega 1 em v0
