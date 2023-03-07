@@ -446,6 +446,7 @@ inserirAuto: #$a0 AP - $a1 TIPO AUTO (C OU M) - $a2 MODELO - $a3 COR
     	
     	autoValidado:
     	    
+    	    
     	    beq $t7, 99,  cancelaInsc	#Caso houver 1 carro na vaga, não permitir mais inserção de auto
     	    beq $t7, 109, insereMoto	#Caso houver 1 moto na vaga, permitir inserção de outra moto
     	    beq $t7, 0,   insereAuto	#Caso não huver nenhum auto, permitir inserção de qualquer auto
@@ -476,10 +477,11 @@ inserirAuto: #$a0 AP - $a1 TIPO AUTO (C OU M) - $a2 MODELO - $a3 COR
     	    jr $ra
     	
     	insereMoto:
-    	
     	    addi $t8, $t5, 42		#Carrega em $t8 a posição da próxima vaga
-    	    lb $t9, 0($t8)
+    	    lb $t9, 0($t8)		#Carrega o valor de $t8 -> tipo presente na vaga
+    	    lb $t7, 0($t2)		#Carrega o valor de $t2 -> tipo a ser inserido
     	    beq $t8, 109, cancelaInsc	#Caso houver uma segunda moto, não permitir a inserção de outra moto
+    	    beq $t7, 99, cancelaInsc	#Não deixa inserir carro caso já existir uma moto
     	    
     	    move $a0, $t8		#Parametro em $a0 = posição a ser inserida
     	    move $a1, $t2		#Parametro em $a1 = tipo do auto
