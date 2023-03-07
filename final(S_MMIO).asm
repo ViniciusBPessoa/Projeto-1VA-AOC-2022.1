@@ -1,5 +1,5 @@
 # Projeto 1 VA Arquitetura e Organização de Computadores - 2022.1
-# Alunos: Vinícius Bezerra, Irlan Farias, Apolo Albuquerque
+# Alunos: Vinícius Bezerra, Irlan Farias, Apolo Albuquerque, joão vitor castro
 # Descrição do arquivo: Código referente ao  Projeto (60% da nota) 
 
 .data
@@ -25,6 +25,9 @@
 	msg_e_n_ap: .asciiz "Falha: AP invalido\n"  						# carrega a string para a falha de ap invalido
 	msg_e_n_p_e: .asciiz "Falha: morador nao encontrado\n"  			# carrega a string para a falha de morador não encontrado
 	msg_e_ap_s_n: .asciiz "Apartamento vazio\n"  					# carrega a string para a falha de ´aprtamento vazio
+	msg_e_au_s_n: .asciiz "Falha: tipo invalido\n"
+	msg_e_au_s_n2: .asciiz "Falha: ap com numero max de automoveis\n"
+	msg_e_au_s_n3: .asciiz "Falha: automovel não encontrado\n"
 	
 	quebra_linha: .asciiz "\n"  									# carrega o \n para pular linha
 	msg_info_ap_spa: .asciiz "	"  								# carrega um espaço 
@@ -429,8 +432,7 @@ inserirAuto: #$a0 AP - $a1 TIPO AUTO (C OU M) - $a2 MODELO - $a3 COR
     
     bne $v0, -1, verificarVaga		#Caso o andar exista, verifica se há vaga
     
-    #Retorna mensagem “Falha: AP invalido
-    jr $ra				#Retorna a quem chamou inserirAuto
+    j main				#Retorna a quem chamou inserirAuto
     
     verificarVaga:
     	add $t5, $v0, 103		#Guarda em $t5 a posição do andar($v0) junto a posição do primeiro auto($t0)
@@ -441,7 +443,9 @@ inserirAuto: #$a0 AP - $a1 TIPO AUTO (C OU M) - $a2 MODELO - $a3 COR
     	beq $t8, 99,  autoValidado
     	beq $t8, 109, autoValidado
     	
-    	#Retornar mensagem “Falha: tipo invalido”
+    	la $a0, msg_e_au_s_n
+    	addi $v0, $0, 4
+    	syscall
     	jr $ra
     	
     	autoValidado:
@@ -507,7 +511,9 @@ inserirAuto: #$a0 AP - $a1 TIPO AUTO (C OU M) - $a2 MODELO - $a3 COR
     	    jr $ra
     	    
     	cancelaInsc:
-    	   #Retornar mensagem “Falha: AP com numero max de automóveis"
+    	   	la $a0, msg_e_au_s_n2
+    		addi $v0, $0, 4
+    		syscall
     	   jr $ra
     	    
 	
@@ -670,7 +676,9 @@ cmd_rm_a:
     	jr $ra
     	
     autoInvalido:
-    	#Retornar mensagem auto especificado n existe
+    	la $a0, msg_e_au_s_n3
+    		addi $v0, $0, 4
+    		syscall
         jr $ra
     	
     removeModelo:
