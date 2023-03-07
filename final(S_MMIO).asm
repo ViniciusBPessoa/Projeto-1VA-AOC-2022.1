@@ -1172,8 +1172,7 @@ ap_n_encontrado:  			# devolve 1 em v0 pq o ap não foi encontrado
     li $v0, 4          			# carrega o código do serviço de impressão de string
     la $a0, msg_e_n_ap       		# carrega o endereço da mensagem
     syscall       				# chama o serviço de impressão de string
-    addi $v0, $0, -1 # carrega 1 em v0
-    jr $ra # encerra a função
+    j main # encerra a função
     
 leArquivo:
 
