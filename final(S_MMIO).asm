@@ -1,8 +1,3 @@
-.eqv rcvr_ctrl 0xffff0000
-.eqv rcvr_data 0xffff0004
-.eqv trsmttr_ctrl 0xffff0008
-.eqv trsmttr_data 0xffff000c
-
 .data
 	str_padrao: .asciiz "VIA-shell>> "	# String padrão a ser exibida no MMIO
 	terminal_cmd: .space 100			# carrega a msg que sera escrita pelo usuario
@@ -21,12 +16,23 @@
 	str_cmd_f: .asciiz "formatar"			# String de comando para formatar o arquivo
 	msg_c_v: .asciiz "Comando Valido\n"		# String usada apenas para testes de comandos válidos digitados no MMIO
 	msg_c_i: .asciiz "Comando Invalido\n"		# String usada apenas para testes de comandos inválidos digitados no MMIO
-	msg_e_n_m_m:  .asciiz "Falha: AP com numero max de moradores"
+	
+	msg_e_n_m_m:  .asciiz "Falha: AP com numero max de moradores\n"
 	msg_e_n_ap: .asciiz "Falha: AP invalido\n"
+	msg_e_n_p_e: .asciiz "Falha: morador nao encontrado\n"
+	msg_e_ap_s_n: .asciiz "Apartamento vazio\n"
 	
 	quebra_linha: .asciiz "\n"
+	msg_info_ap_spa: .asciiz "	"
 	msg_info_ap0: .asciiz "AP: "
 	msg_info_ap1: .asciiz "Moradores:"
+	msg_info_ap2: .asciiz "Carro:"
+	msg_info_ap3: .asciiz "Moto:"
+	msg_info_ap4: .asciiz "Modelo: "
+	msg_info_ap5: .asciiz "Cor: "
+	
+	msg_info_g1: .asciiz "Não vazios: "
+	msg_info_g2: .asciiz "Vazios:  "
 	
 	apt_space: .space 7480  				#  espaços dedicados para os apartamentos
  	localArquivo: .asciiz "C:/aps.txt"  			# local no computador onde o arquivo original se mantem
@@ -121,10 +127,6 @@ verifica_cmds1:
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_if_ap			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de informações de AP especifico, dai pula para função responsável
 	
-	la $a1, str_cmd_if_g			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário	
-	jal compara_str					# Pula para função que compara strings e volta
-	beq $v0, $0, cmd_if_g			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de informações dos APs em geral, dai pula para função responsável
-	
 	la $a1, str_cmd_s			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário		
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_s				# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de salvar as infos num arquivo, dai pula para função responsável
@@ -141,6 +143,11 @@ verifica_cmds1:
 
 verifica_cmds2:
 		
+	la $a1, str_cmd_if_g			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário	
+	jal compara_str					# Pula para função que compara strings e volta
+	beq $v0, $0, cmd_if_g			# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de informações dos APs em geral, dai pula para função responsável
+	
+	
 	la $a1, str_cmd_s			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário		
 	jal compara_str					# Pula para função que compara strings e volta
 	beq $v0, $0, cmd_s				# Caso $v0 volte da comparação com valor 0 significa que o comando digitado é o de salvar as infos num arquivo, dai pula para função responsável
@@ -231,18 +238,10 @@ inserirPessoa:  # vou considerar que o valor de $a0 apartamento e $a1 esta com o
     jr $ra # ja que a função foi bem sucedida retorna ao inicio
     
     apt_cheio: # caso o apartamento esteja cheio retor na o erro 2
-      addi $v0, $0, 2 # carrega 2 no retorno 
-      la $a1, msg_e_n_m_m
-      mensagem_de_erro_loop:
-        lw $t0, trsmttr_ctrl			# Lê o conteudo escrito no transmitter control no reg t0							
-        andi $t1, $t0, 1        		# Faz a operação AND entre o valor contido no reg t0 e 1 a fim de isolar o último bit (bit "pronto")       		               		
-        beq $t1, $zero, mensagem_de_erro_loop	# Caso seja 0, o transmissor não está pronto para receber valores: continua o loop
-	lb $t2, 0($a1)					# Carrega um byte da string "Comando Invalido" para ser impresso no MMIO					
-	beq $t2, $zero, fim_leitura		# Caso o byte carregado seja 0, significa que a string terminou, daí vai para função que quebra linha e pula para a main
-	sb $t2, trsmttr_data			# Escreve o caractere no display do MMIO	
-	addi $a1, $a1, 1				# Soma 1 ao endereço da string "Comando Invalido" afim de ir para o proximo byte
-	j mensagem_de_erro_loop					# Jump para continuar o loop
-      jr $ra # acaba a função
+      la $a0, msg_e_n_m_m
+      li $v0, 4
+      syscall
+      j main # acaba a função
 
 
 	
@@ -316,12 +315,14 @@ cmd_rm_m:
     addi $t3, $t3, 1  # adiciona um ao contador de pessoas verificadas
     beq $v0, 0, pessoa_encontrada  # verifica se o nome a ser removido é esse
     addi $t2, $t2, 20 # pula para o proximo nome
-    beq $t3, 5, pessoa_n_enc  #  caso a pessoa não seja encontrada
+    beq $t3, 6, pessoa_n_enc  #  caso a pessoa não seja encontrada
     j remover_pessoa_ac  # retorna ao loop
 
   pessoa_n_enc:
-    addi $v0, $0, 1 # carrega 1 em v0
-    jr $ra # encerra a função
+    la $a0, msg_e_n_p_e
+    li $v0, 4
+    syscall
+    j main # encerra a função
 
   pessoa_encontrada:  # função que vai remover a pessoa em si
     addi $t1,$0, 0  #  adiciona 0 a t1 para que o mesmo substitua o nome da pessoa
@@ -726,6 +727,13 @@ cmd_if_ap:
 	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
 	addi $a0, $a0, 8				# Soma 8 ao endereço afim de ir para onde começa o numero do AP 
 	
+	jal verifica_ap
+	
+	beq $v0, 2, ap_sem_n
+	
+	la $a0, terminal_cmd			# Lê o endereço do espaço que armazena o que foi digitado pelo usuário
+	addi $a0, $a0, 8				# Soma 8 ao endereço afim de ir para onde começa o numero do AP 
+	
 	jal info_ap_esp
 	j fim_leitura					# Pula para função que quebra linha e pula para a main
 	
@@ -743,7 +751,7 @@ cmd_if_ap:
   	
   	
   	move $t1, $v0
-	  
+	
 	  
 	 li $v0, 4
    	 la $a0, msg_info_ap0
@@ -777,19 +785,109 @@ cmd_if_ap:
    	 fim_loop_aps:
    	 	addi $t2, $t2, 1
    	 	addi $t1, $t1, 20
-   	 	beq $t2, 4, main
+   	 	beq $t2, 5, continua_info
    	 	j loop_info_aps_moradores
    	 	
    	 imprime_mora:
+   			li $v0, 4
+   			la $a0, msg_info_ap_spa
+   	 		syscall
+   	 		
    	 		li $v0, 4
    	 		move $a0, $t1
    			syscall
+   			
    			li $v0, 4
    			la $a0, quebra_linha
    	 		syscall
    			j fim_loop_aps
    	
-    j main
+    continua_info:
+    	lb $t3, 0($t1)
+    	
+    	beq $t3, 99, imprime_carro
+    	beq $t3, 109, imprime_moto
+    	addi $t1, $t1, 42
+    	lb $t3, 0($t1)
+    	beq $t3, 109, imprime_motof
+    	j main
+    	
+    veri_m_moto:
+    	addi $t1, $t1, 20
+    	lb $t3, 0($t1)
+    	beq $t3, 109, imprime_motof
+    	j main
+    
+    imprime_carro:
+    	
+    	li $v0, 4
+   	la $a0, msg_info_ap2
+   	syscall
+    	
+    	li $v0, 4
+   	la $a0, quebra_linha
+   	syscall
+   	j cont_impre
+   	
+   imprime_moto:
+   	li $v0, 4
+   	la $a0, msg_info_ap3
+   	syscall
+    	
+    	li $v0, 4
+   	la $a0, quebra_linha
+   	syscall
+   	j cont_impre
+   
+   imprime_motof:
+   	addi $t4, $0, 123 
+   	j cont_impre
+   	
+    cont_impre:
+    	li $v0, 4
+   	la $a0, msg_info_ap_spa
+   	syscall
+   	
+   	li $v0, 4
+   	la $a0, msg_info_ap4
+   	syscall
+   	
+   	addi $t1, $t1, 2
+   	li $v0, 4
+   	move $a0, $t1
+   	syscall
+   	
+   	li $v0, 4
+   	la $a0, quebra_linha
+   	syscall
+    	
+    	li $v0, 4
+   	la $a0, msg_info_ap_spa
+   	syscall
+   	
+   	li $v0, 4
+   	la $a0, msg_info_ap5
+   	syscall
+   	
+   	addi $t1, $t1, 20
+   	li $v0, 4
+   	move $a0, $t1
+   	syscall
+   	
+   	li $v0, 4
+   	la $a0, quebra_linha
+   	syscall
+   	
+   	lb $t3, 0($t1)
+   	beq $t3, 99, main
+   	beq $t4, 123, main
+   	j veri_m_moto
+    	
+    	ap_sem_n:
+    		li $v0, 4
+   		la $a0, msg_e_ap_s_n
+   		syscall
+   		j main
 # Função de informações gerais dos APs	
 cmd_if_g:
 	
@@ -798,7 +896,7 @@ cmd_if_g:
 	jal verificador_info_geral
         lw $ra, 0($sp)
         addi $sp, $sp, 4
-        j fim_leitura					# Pula para função que quebra linha e pula para a main
+        j reslt_veri
         
 verificador_info_geral:  # é responsavel por realizar a contagem das apartamentos com pessoas e sem pessoas
   move $t1, $s2  #  pega o inicializador, como ele sempre esta em s2   
@@ -825,8 +923,6 @@ verificador_info_geral:  # é responsavel por realizar a contagem das apartamento
     lw $t1, 0($sp)  #  recupera t1 contagem de aps
     addi $sp, $sp, 16  #  libera o espaço na memoria para evitar problemas com conflitos
     
-    
-    
     beq $v0, 2, apt_va  #  verifica se o apt esta cheio ou não
     beq $v0, 1, apt_ch  #  verifica se o apt esta cheio ou não
     
@@ -848,28 +944,70 @@ verificador_info_geral:  # é responsavel por realizar a contagem das apartamento
       move $v1, $t3  #  caso sim coloca em v1 os não cheios
       jr $ra  # retorna a antes da função
 	
-	j fim_leitura					# Pula para função que quebra linha e pula para a main
+    reslt_veri:
+        
+        move $t1, $v0
+        move $t2, $v1
+        
+	li $v0, 4
+   	la $a0, msg_info_g1
+   	syscall
+   	
+   	li $v0, 1
+   	move $a0, $t1
+   	syscall
+	
+	li $v0, 4
+   	la $a0, quebra_linha
+   	syscall
+   	
+   	li $v0, 4
+   	la $a0, msg_info_g2
+   	syscall
+   	
+   	li $v0, 1
+   	move $a0, $t2
+   	syscall
+	
+	li $v0, 4
+   	la $a0, quebra_linha
+   	syscall
+	
+	j main
 	
 # Função de salvar no arquivo
 cmd_s:
 	
-	# Espaço para colocar a função ou um jump para a função, whatever
+	j escreveArquivo
 	
 	j fim_leitura					# Pula para função que quebra linha e pula para a main
 	
 # Função de recarregar o arquivo	
 cmd_r:
 	
-	# Espaço para colocar a função ou um jump para a função, whatever
+	j awake
 	
 	j fim_leitura					# Pula para função que quebra linha e pula para a main
 	
 # Função de formatar o arquivo	
 cmd_f:
 	
-	# Espaço para colocar a função ou um jump para a função, whatever
+	formatar: # Percorre os apartamentos apagando todos os dados
 	
-	j fim_leitura					# Pula para função que quebra linha e pula para a main
+	addi $t1, $s2, 3 # Armazena a primeira posição do primeiro AP em t1
+  	addi $t0, $s2, 7483 # Armazena a última posição dos AP's + 3 em t0
+  	addi $t3, $s2, 187  #  Armazena a última posição do primeiro AP em t3
+  	addi $t5, $0, 0 # Armazena o /0 em t5
+  
+  	resetar_AP: # Remove todos os dados de todos os AP's
+    	sb $t5, 0($t1)  # salva /0 na memoria
+    	addi $t1, $t1, 1 # adiciona 1 ao contador
+    	bne $t1, $t3, resetar_AP  # Verifica se chegou ao fim do AP
+    	addi $t1, $t1, 3 # Pula para a primeira posição do próximo AP
+    	addi $t3, $t3, 187 # Armazena a última posição de cada AP em t3
+    	bne $t1, $t0, resetar_AP # Verifica se chegou a última posição de todos os AP's
+   
+  	j main  #  Retorna para a chamada da função
 	
 # Função que escreve "Comando Inválido" no display MMIO
 	
@@ -1062,3 +1200,26 @@ esvasia_apt_rm:  # recebe em a0 o endereço do apt e em a1 a horigem dos apartame
     addi $t1, $t1, 1 # adiciona 1 ao contador
     bne $t1, $t3, removedor_rm  # verifica o fim da remoção
     jr $ra  #  velta para o fim da dunção
+
+escreveArquivo:
+
+	#Abre arquivo para escrever
+	
+	li $v0, 13			#abrir arquivo
+	la $a0, localArquivo 		#informa endereço
+	li $a1, 1			#informa parametro escrita
+	syscall 			#descritor pra $v0
+	
+	#De fato escreve
+	
+	li $v0, 15			#escreve conteudo no arquivo referenciado em $a0
+	move $a0, $s1 			#copia para o parametro $a0 o descritor guarado em $s0
+	la $a1, apt_space 		#Conteudo a ser escrito
+	li $a2, 7480			#Quantidade de caracteres a em escritos
+	syscall				#executa a função
+		
+	li $v0, 16 			#fecha arquivo
+	move $a0, $s1 			#copia para o parametro $a0 o descritor guarado em $s0
+	syscall 			#executa função
+
+	j main
